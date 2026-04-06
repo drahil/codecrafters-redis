@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"strconv"
+	"strings"
 )
 
 // Ensures gofmt doesn't remove the "net" and "os" imports in stage 1 (feel free to remove this!)
@@ -16,30 +18,75 @@ func main() {
 
 	// Uncomment the code below to pass the first stage
 	//
-	l, err := net.Listen("tcp", "0.0.0.0:6379")
+	l, err := net.Listen("tcp", "0.0.0.0:6381")
 	if err != nil {
 		fmt.Println("Failed to bind to port 6379")
 		os.Exit(1)
 	}
 
 	for {
-		go handleConnection(l)
+		conn, err := l.Accept()
+		if err != nil {
+			fmt.Println("Error accepting connection: ", err.Error())
+			os.Exit(1)
+		}
+		go handleConnection(conn)
 	}
 }
 
-func handleConnection(l net.Listener) {
-	conn, err := l.Accept()
-	if err != nil {
-		fmt.Println("Error accepting connection: ", err.Error())
-		os.Exit(1)
-	}
-
+func handleConnection(conn net.Conn) {
+	defer conn.Close()
 	for {
-		_, err := conn.Read(make([]byte, 1024))
+		buf := make([]byte, 1024)
+		n, err := conn.Read(buf)
 		if err != nil {
-			conn.Close()
 			break
 		}
-		conn.Write([]byte("+PONG\r\n"))
+		raw := string(buf[:n])
+		args := parseMessage(raw)
+		fmt.Printf("%#v\n", args)
+		conn.Write([]byte(respEncoder(args[1])))
 	}
+}
+
+func parseMessage(message string) []string {
+	lines := strings.Split(message, "\r\n")
+	var args []string
+
+	i := 0
+	if len(lines) == 0 {
+		return args
+	}
+
+	// First line should be *N (array with N elements)
+	if len(lines[0]) == 0 || lines[0][0] != '*' {
+		return args
+	}
+	numArgs, err := strconv.Atoi(lines[0][1:])
+	if err != nil {
+		return args
+	}
+	i++
+
+	for j := 0; j < numArgs; j++ {
+		if i >= len(lines) {
+			break
+		}
+		// Skip the $N bulk string length prefix
+		if len(lines[i]) > 0 && lines[i][0] == '$' {
+			i++
+		}
+		if i >= len(lines) {
+			break
+		}
+		args = append(args, strings.ToLower(lines[i]))
+		i++
+	}
+
+	return args
+}
+
+func respEncoder(raw string) string {
+	// $<length>\r\n<data>\r\n
+	return fmt.Sprintf("$%d\r\n%s\r\n", len(raw), raw)
 }
