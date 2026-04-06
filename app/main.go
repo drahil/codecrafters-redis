@@ -45,7 +45,17 @@ func handleConnection(conn net.Conn) {
 		raw := string(buf[:n])
 		args := parseMessage(raw)
 		fmt.Printf("%#v\n", args)
-		conn.Write([]byte(respEncoder(args[1])))
+		if len(args) == 0 {
+			continue
+		}
+		switch args[0] {
+		case "ping":
+			conn.Write([]byte("+PONG\r\n"))
+		case "echo":
+			if len(args) > 1 {
+				conn.Write([]byte(respEncoder(args[1])))
+			}
+		}
 	}
 }
 
