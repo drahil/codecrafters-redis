@@ -114,5 +114,11 @@ func setValue(args []string) string {
 }
 
 func getValue(args []string) string {
-	return cache[args[1]]
+	response := cache[args[1]]
+	
+	if (response != "") {
+		return response
+	}
+	
+	return "$-1\r\n"
 }
