@@ -62,7 +62,8 @@ func handleConnection(conn net.Conn) {
 			db[args[1]] = args[2]
 			conn.Write([]byte(setValue(args)))
 		case "get":
-			conn.Write([]byte(getValue(args)))
+			
+			conn.Write([]byte(getValue(db[args[1]])))
 		}
 			
 	}
@@ -111,15 +112,13 @@ func respEncoder(raw string) string {
 }
 
 func setValue(args []string) string {
-	cache[args[1]] = args[2]
 	return respEncoder("OK")
 }
 
-func getValue(args []string) string {
-	response := cache[args[1]]
+func getValue(value string) string {
 	
-	if (response != "") {
-		return response
+	if (value != "") {
+		return value
 	}
 	
 	return "$-1\r\n"
