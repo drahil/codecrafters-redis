@@ -12,7 +12,6 @@ import (
 var _ = net.Listen
 var _ = os.Exit
 
-var cache map[string]string
 
 func main() {
 	// You can use print statements as follows for debugging, they'll be visible when running tests.
@@ -20,7 +19,7 @@ func main() {
 
 	// Uncomment the code below to pass the first stage
 	//
-	l, err := net.Listen("tcp", "0.0.0.0:6379")
+	l, err := net.Listen("tcp", "0.0.0.0:6381")
 	if err != nil {
 		fmt.Println("Failed to bind to port 6379")
 		os.Exit(1)
@@ -38,6 +37,8 @@ func main() {
 
 func handleConnection(conn net.Conn) {
 	defer conn.Close()
+	db := make(map[string]string)
+
 	for {
 		buf := make([]byte, 1024)
 		n, err := conn.Read(buf)
@@ -58,6 +59,7 @@ func handleConnection(conn net.Conn) {
 				conn.Write([]byte(respEncoder(args[1])))
 			}
 		case "set":
+			db[args[1]] = args[2]
 			conn.Write([]byte(setValue(args)))
 		case "get":
 			conn.Write([]byte(getValue(args)))
