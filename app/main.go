@@ -12,6 +12,8 @@ import (
 var _ = net.Listen
 var _ = os.Exit
 
+var cache map[string]string
+
 func main() {
 	// You can use print statements as follows for debugging, they'll be visible when running tests.
 	fmt.Println("Logs from your program will appear here!")
@@ -55,7 +57,12 @@ func handleConnection(conn net.Conn) {
 			if len(args) > 1 {
 				conn.Write([]byte(respEncoder(args[1])))
 			}
+		case "set":
+			conn.Write([]byte(setValue(args)))
+		case "get":
+			conn.Write([]byte(getValue(args)))
 		}
+			
 	}
 }
 
@@ -99,4 +106,13 @@ func parseMessage(message string) []string {
 func respEncoder(raw string) string {
 	// $<length>\r\n<data>\r\n
 	return fmt.Sprintf("$%d\r\n%s\r\n", len(raw), raw)
+}
+
+func setValue(args []string) string {
+	cache[args[1]] = args[2]
+	return respEncoder("OK")
+}
+
+func getValue(args []string) string {
+	return cache[args[1]]
 }
