@@ -112,7 +112,7 @@ func respEncoder(raw string) string {
 }
 
 func setValue(args []string) string {
-	return respEncoder("OK")
+	return "OK"
 }
 
 func getValue(value string) string {
