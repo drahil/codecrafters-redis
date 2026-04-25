@@ -138,7 +138,7 @@ func setValue() string {
 
 func getValue(entry Entry) string {
 	if (entry.Value == "") {
-		return "aaaaaaaa"
+		return "$-1\r\n"
 	}
 	
 	if (entry.ExpireTime == -1) {
@@ -147,7 +147,7 @@ func getValue(entry Entry) string {
 	
 	nowMs := time.Now().UnixMilli()
 	
-	if(nowMs <= entry.ExpireTime) {
+	if(nowMs > entry.ExpireTime) {
 		return  respEncoder(entry.Value)
 	}
 	
