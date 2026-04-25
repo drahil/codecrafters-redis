@@ -120,9 +120,8 @@ func setValue(args []string) string {
 }
 
 func getValue(value string) string {
-	
 	if (value != "") {
-		return value
+		return simpleEncoder(value)
 	}
 	
 	return "$-1\r\n"
