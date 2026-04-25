@@ -138,7 +138,7 @@ func setValue() string {
 
 func getValue(entry Entry) string {
 	if (entry.Value == "") {
-		return "$-1\r\n"
+		return "aaaaaaaa"
 	}
 	
 	if (entry.ExpireTime == -1) {
