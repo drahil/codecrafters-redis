@@ -6,12 +6,17 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 )
 
 // Ensures gofmt doesn't remove the "net" and "os" imports in stage 1 (feel free to remove this!)
 var _ = net.Listen
 var _ = os.Exit
 
+type Entry struct {
+	Value string
+	ExpireTime int64
+}
 
 func main() {
 	// You can use print statements as follows for debugging, they'll be visible when running tests.
@@ -37,7 +42,8 @@ func main() {
 
 func handleConnection(conn net.Conn) {
 	defer conn.Close()
-	db := make(map[string]string)
+	db := make(map[string]Entry)
+	var expireTime int64 = -1
 
 	for {
 		buf := make([]byte, 1024)
@@ -59,10 +65,21 @@ func handleConnection(conn net.Conn) {
 				conn.Write([]byte(respEncoder(args[1])))
 			}
 		case "set":
-			db[args[1]] = args[2]
-			conn.Write([]byte(setValue(args)))
-		case "get":
+			if(args[3] == "ex") {
+				expireTime, _ = strconv.ParseInt(args[4][1:], 10, 64)
+				expireTime *= 1000
+				nowMs := time.Now().UnixMilli()
+				expireTime = expireTime + nowMs
+			} 
+			if(args[3] == "px"){
+				expireTime, _ = strconv.ParseInt(args[4][1:], 10, 64)
+				nowMs := time.Now().UnixMilli()
+				expireTime = expireTime + nowMs
+			}
 			
+			db[args[1]] = Entry{Value: args[2], ExpireTime: expireTime}
+			conn.Write([]byte(setValue()))
+		case "get":
 			conn.Write([]byte(getValue(db[args[1]])))
 		}
 			
@@ -115,13 +132,23 @@ func simpleEncoder(raw string) string {
 	return fmt.Sprintf("+%s\r\n", raw)
 }
 
-func setValue(args []string) string {
+func setValue() string {
 	return simpleEncoder("OK")
 }
 
-func getValue(value string) string {
-	if (value != "") {
-		return respEncoder(value)
+func getValue(entry Entry) string {
+	if (entry.Value == "") {
+		return "$-1\r\n"
+	}
+	
+	if (entry.ExpireTime == -1) {
+		return  respEncoder(entry.Value)
+	}
+	
+	nowMs := time.Now().UnixMilli()
+	
+	if(nowMs <= entry.ExpireTime) {
+		return  respEncoder(entry.Value)
 	}
 	
 	return "$-1\r\n"
