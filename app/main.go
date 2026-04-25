@@ -111,8 +111,12 @@ func respEncoder(raw string) string {
 	return fmt.Sprintf("$%d\r\n%s\r\n", len(raw), raw)
 }
 
+func simpleEncoder(raw string) string {
+	return fmt.Sprintf("+%s\r\n", raw)
+}
+
 func setValue(args []string) string {
-	return "OK"
+	return simpleEncoder("OK")
 }
 
 func getValue(value string) string {
