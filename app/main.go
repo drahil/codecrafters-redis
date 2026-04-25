@@ -66,13 +66,13 @@ func handleConnection(conn net.Conn) {
 			}
 		case "set":
 			if(args[3] == "ex") {
-				expireTime, _ = strconv.ParseInt(args[4][1:], 10, 64)
+				expireTime, _ = strconv.ParseInt(args[4], 10, 64)
 				expireTime *= 1000
 				nowMs := time.Now().UnixMilli()
 				expireTime = expireTime + nowMs
 			} 
 			if(args[3] == "px"){
-				expireTime, _ = strconv.ParseInt(args[4][1:], 10, 64)
+				expireTime, _ = strconv.ParseInt(args[4], 10, 64)
 				nowMs := time.Now().UnixMilli()
 				expireTime = expireTime + nowMs
 			}
