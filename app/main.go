@@ -147,7 +147,7 @@ func getValue(entry Entry) string {
 	
 	nowMs := time.Now().UnixMilli()
 	
-	if(nowMs > entry.ExpireTime) {
+	if(nowMs <= entry.ExpireTime) {
 		return  respEncoder(entry.Value)
 	}
 	
