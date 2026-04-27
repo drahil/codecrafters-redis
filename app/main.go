@@ -135,7 +135,8 @@ func simpleEncoder(raw string) string {
 }
 
 func respInteger(raw int) string {
-	return fmt.Sprintf(":$d\r\n", raw)
+	stringRaw := strconv.Itoa(raw)
+	return fmt.Sprintf(":$d\r\n", stringRaw)
 }
 
 func setValue() string {
