@@ -81,8 +81,10 @@ func handleConnection(conn net.Conn) {
 			conn.Write([]byte(setValue()))
 		case "get":
 			conn.Write([]byte(getValue(db[args[1]])))
+		case "rpush":
+			conn.Write([]byte(rpushValue(args)))
 		}
-			
+		
 	}
 }
 
@@ -132,6 +134,10 @@ func simpleEncoder(raw string) string {
 	return fmt.Sprintf("+%s\r\n", raw)
 }
 
+func respInteger(raw int) string {
+	return fmt.Sprintf(":$d\r\n", raw)
+}
+
 func setValue() string {
 	return simpleEncoder("OK")
 }
@@ -152,4 +158,15 @@ func getValue(entry Entry) string {
 	}
 	
 	return "$-1\r\n"
+}
+
+func rpushValue(args []string) string {
+	listName := args[0]
+	values := args[1:]
+	
+	data := map[string][]string{
+		listName: values,
+	}
+	
+	return respInteger(len(data))
 }
