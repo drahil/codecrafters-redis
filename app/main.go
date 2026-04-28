@@ -44,20 +44,18 @@ func handleConnection(conn net.Conn) {
 	defer conn.Close()
 	db := make(map[string]Entry)
 	lists := make(map[string][]string)
-	var expireTime int64 = -1
 
 	for {
-		buf := make([]byte, 1024)
-		n, err := conn.Read(buf)
+		args, err := getArgs(conn)
+		
 		if err != nil {
 			break
 		}
-		raw := string(buf[:n])
-		args := parseMessage(raw)
-		fmt.Printf("%#v\n", args)
+		
 		if len(args) == 0 {
 			continue
 		}
+		
 		switch args[0] {
 		case "ping":
 			conn.Write([]byte("+PONG\r\n"))
@@ -66,20 +64,7 @@ func handleConnection(conn net.Conn) {
 				conn.Write([]byte(respEncoder(args[1])))
 			}
 		case "set":
-			if(len(args) > 3 && args[3] == "ex") {
-				expireTime, _ = strconv.ParseInt(args[4], 10, 64)
-				expireTime *= 1000
-				nowMs := time.Now().UnixMilli()
-				expireTime = expireTime + nowMs
-			} 
-			if(len(args) > 4 && args[3] == "px"){
-				expireTime, _ = strconv.ParseInt(args[4], 10, 64)
-				nowMs := time.Now().UnixMilli()
-				expireTime = expireTime + nowMs
-			}
-			
-			db[args[1]] = Entry{Value: args[2], ExpireTime: expireTime}
-			conn.Write([]byte(setValue()))
+			conn.Write([]byte(setValue(args, db)))
 		case "get":
 			conn.Write([]byte(getValue(db[args[1]])))
 		case "rpush":
@@ -126,6 +111,17 @@ func parseMessage(message string) []string {
 	return args
 }
 
+func getArgs(conn net.Conn) ([]string, error){
+	buf := make([]byte, 1024)
+	n, err := conn.Read(buf)
+
+	raw := string(buf[:n])
+	args := parseMessage(raw)
+	fmt.Printf("%#v\n", args)
+	
+	return args, err
+}
+
 func respEncoder(raw string) string {
 	// $<length>\r\n<data>\r\n
 	return fmt.Sprintf("$%d\r\n%s\r\n", len(raw), raw)
@@ -140,7 +136,22 @@ func respInteger(raw int) string {
 	return fmt.Sprintf(":%s\r\n", stringRaw)
 }
 
-func setValue() string {
+func setValue(args []string, db map[string]Entry) string {
+	var expireTime int64 = -1
+
+	if(len(args) > 3 && args[3] == "ex") {
+		expireTime, _ = strconv.ParseInt(args[4], 10, 64)
+		expireTime *= 1000
+		nowMs := time.Now().UnixMilli()
+		expireTime = expireTime + nowMs
+	} 
+	if(len(args) > 4 && args[3] == "px"){
+		expireTime, _ = strconv.ParseInt(args[4], 10, 64)
+		nowMs := time.Now().UnixMilli()
+		expireTime = expireTime + nowMs
+	}
+	
+	db[args[1]] = Entry{Value: args[2], ExpireTime: expireTime}
 	return simpleEncoder("OK")
 }
 
@@ -172,9 +183,5 @@ func rpushValue(args []string, lists map[string][]string) string {
 		lists[listName] = values
 	}
 	
-    fmt.Printf("%#v\n", listName)
-
-	
 	return respInteger(len(lists[listName]))
-
 }
