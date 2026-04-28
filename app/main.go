@@ -43,6 +43,7 @@ func main() {
 func handleConnection(conn net.Conn) {
 	defer conn.Close()
 	db := make(map[string]Entry)
+	lists := make(map[string][]string)
 	var expireTime int64 = -1
 
 	for {
@@ -82,7 +83,7 @@ func handleConnection(conn net.Conn) {
 		case "get":
 			conn.Write([]byte(getValue(db[args[1]])))
 		case "rpush":
-			conn.Write([]byte(rpushValue(args)))
+			conn.Write([]byte(rpushValue(args, lists)))
 		}
 		
 	}
@@ -161,13 +162,15 @@ func getValue(entry Entry) string {
 	return "$-1\r\n"
 }
 
-func rpushValue(args []string) string {
+func rpushValue(args []string, lists map[string][]string) string {
 	listName := args[0]
 	values := args[1:]
 	
-	data := map[string][]string{
-		listName: values,
+	if existingList, ok := lists[listName]; ok {
+		lists[listName] = append(existingList, values...)
+	} else {
+		lists[listName] = values
 	}
 	
-	return respInteger(len(data))
+	return respInteger(len(lists[listName]))
 }
