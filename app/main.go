@@ -172,5 +172,9 @@ func rpushValue(args []string, lists map[string][]string) string {
 		lists[listName] = values
 	}
 	
+    fmt.Printf("%#v\n", listName)
+
+	
 	return respInteger(len(lists[listName]))
+
 }
