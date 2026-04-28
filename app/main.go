@@ -163,8 +163,8 @@ func getValue(entry Entry) string {
 }
 
 func rpushValue(args []string, lists map[string][]string) string {
-	listName := args[0]
-	values := args[1:]
+	listName := args[1]
+	values := args[2:]
 	
 	if existingList, ok := lists[listName]; ok {
 		lists[listName] = append(existingList, values...)
