@@ -22,5 +22,8 @@ func New() *Store {
 // func (s *Store) LRange(key string, start, end int) []string
 
 func (s *Store) Set(key, value string, expireTime int64) {
-	
+	s.Strings[key] = Entry{
+	        Value:      value,
+	        ExpireTime: expireTime,
+	   }
 }
