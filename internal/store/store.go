@@ -80,3 +80,14 @@ func (s *Store) LRange(key string, start, end int) []string {
 
 	return list[start : end+1]
 }
+
+func (s *Store) Length(listName string) int {
+	return len(s.Lists[listName])
+}
+
+func (s *Store) LPop(listName string) string {
+	result := s.Lists[listName][0]
+	s.Lists[listName] = s.Lists[listName][1:]
+
+	return result
+}

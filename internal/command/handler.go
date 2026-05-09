@@ -34,6 +34,8 @@ func (h *Handler) Handle(args []string) string {
 		return h.lpush(args)
 	case "llen":
 		return h.llen(args)
+	case "lpop":
+		return h.lpop(args)
 	}
 
 	return resp.SimpleString("OK")
@@ -63,7 +65,7 @@ func (h *Handler) get(key string) string {
 	entry, _ := h.store.Get(key)
 
 	if entry.Value == "" {
-		return "$-1\r\n"
+		return resp.NullBulkString()
 	}
 
 	if entry.ExpireTime == -1 {
@@ -76,7 +78,7 @@ func (h *Handler) get(key string) string {
 		return resp.BulkString(entry.Value)
 	}
 
-	return "$-1\r\n"
+	return resp.NullBulkString()
 }
 
 func (h *Handler) rpush(args []string) string {
@@ -111,5 +113,20 @@ func (h *Handler) lpush(args []string) string {
 func (h *Handler) llen(args []string) string {
 	listName := args[1]
 
-	return resp.Integer(len(h.store.Lists[listName]))
+	return resp.Integer(h.store.Length(listName))
+}
+
+func (h *Handler) lpop(args []string) string {
+	listName := args[1]
+
+	if listName == "" {
+		return resp.NullBulkString()
+	}
+
+	if h.store.Length(listName) == 0 {
+		return resp.NullBulkString()
+	}
+
+	result := h.store.LPop(listName)
+	return resp.BulkString(result)
 }

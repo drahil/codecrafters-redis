@@ -32,3 +32,7 @@ func Array(values []string) string {
 
 	return builder.String()
 }
+
+func NullBulkString() string {
+	return "$-1\r\n"
+}
