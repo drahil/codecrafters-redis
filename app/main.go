@@ -2,12 +2,14 @@ package main
 
 import (
 	"fmt"
-	"github.com/codecrafters-io/redis-starter-go/internal/resp"
-	"github.com/codecrafters-io/redis-starter-go/internal/store"
 	"net"
 	"os"
 	"strconv"
 	"time"
+
+	"github.com/codecrafters-io/redis-starter-go/internal/command"
+	"github.com/codecrafters-io/redis-starter-go/internal/resp"
+	"github.com/codecrafters-io/redis-starter-go/internal/store"
 )
 
 // Ensures gofmt doesn't remove the "net" and "os" imports in stage 1 (feel free to remove this!)
@@ -27,6 +29,7 @@ func main() {
 	}
 
 	store := store.New()
+	handler := command.NewHandler(store)
 
 	for {
 		conn, err := l.Accept()
@@ -34,11 +37,11 @@ func main() {
 			fmt.Println("Error accepting connection: ", err.Error())
 			os.Exit(1)
 		}
-		go handleConnection(conn, store)
+		go handleConnection(conn, handler)
 	}
 }
 
-func handleConnection(conn net.Conn, store *store.Store) {
+func handleConnection(conn net.Conn, handler *command.Handler) {
 	defer conn.Close()
 
 	for {
@@ -52,83 +55,7 @@ func handleConnection(conn net.Conn, store *store.Store) {
 			continue
 		}
 
-		switch args[0] {
-		case "ping":
-			conn.Write([]byte("+PONG\r\n"))
-		case "echo":
-			if len(args) > 1 {
-				conn.Write([]byte(resp.BulkString(args[1])))
-			}
-		case "set":
-			conn.Write([]byte(setValue(args, store)))
-		case "get":
-			conn.Write([]byte(getValue(args[1], store)))
-		case "rpush":
-			conn.Write([]byte(rpushValue(args, store)))
-		case "lrange":
-			conn.Write([]byte(lrange(args, store)))
-		}
-
+		response := handler.Handle(args)
+		conn.Write([]byte(response))
 	}
-}
-
-func setValue(args []string, store *store.Store) string {
-	var expireTime int64 = -1
-
-	if len(args) > 3 && args[3] == "ex" {
-		expireTime, _ = strconv.ParseInt(args[4], 10, 64)
-		expireTime *= 1000
-		nowMs := time.Now().UnixMilli()
-		expireTime = expireTime + nowMs
-	}
-	if len(args) > 4 && args[3] == "px" {
-		expireTime, _ = strconv.ParseInt(args[4], 10, 64)
-		nowMs := time.Now().UnixMilli()
-		expireTime = expireTime + nowMs
-	}
-
-	store.Set(args[1], args[2], expireTime)
-
-	return resp.SimpleString("OK")
-}
-
-func getValue(key string, store *store.Store) string {
-	entry, _ := store.Get(key)
-
-	if entry.Value == "" {
-		return "$-1\r\n"
-	}
-
-	if entry.ExpireTime == -1 {
-		return resp.BulkString(entry.Value)
-	}
-
-	nowMs := time.Now().UnixMilli()
-
-	if nowMs <= entry.ExpireTime {
-		return resp.BulkString(entry.Value)
-	}
-
-	return "$-1\r\n"
-}
-
-func rpushValue(args []string, store *store.Store) string {
-	listName := args[1]
-	values := args[2:]
-
-	length := store.RPush(listName, values...)
-
-	return resp.Integer(length)
-}
-
-func lrange(args []string, store *store.Store) string {
-	listName := args[1]
-
-	start, _ := strconv.Atoi(args[2])
-	end, _ := strconv.Atoi(args[3])
-
-	values := store.LRange(listName, start, end)
-
-	return resp.Array(values)
-
 }
