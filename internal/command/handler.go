@@ -30,6 +30,8 @@ func (h *Handler) Handle(args []string) string {
 		return h.rpush(args)
 	case "lrange":
 		return h.lrange(args)
+	case "lpush":
+		return h.lpush(args)
 	}
 
 	return resp.SimpleString("OK")
@@ -93,4 +95,13 @@ func (h *Handler) lrange(args []string) string {
 	values := h.store.LRange(listName, start, end)
 
 	return resp.Array(values)
+}
+
+func (h *Handler) lpush(args []string) string {
+	listName := args[1]
+	values := args[2:]
+
+	length := h.store.LPush(listName, values...)
+
+	return resp.Integer(length)
 }

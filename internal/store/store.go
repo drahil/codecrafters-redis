@@ -36,6 +36,11 @@ func (s *Store) RPush(key string, values ...string) int {
 	return len(s.Lists[key])
 }
 
+func (s *Store) LPush(key string, values ...string) int {
+	s.Lists[key] = append(values, s.Lists[key]...)
+	return len(s.Lists[key])
+}
+
 func (s *Store) LRange(key string, start, end int) []string {
 	list, ok := s.Lists[key]
 	if !ok {
@@ -53,11 +58,11 @@ func (s *Store) LRange(key string, start, end int) []string {
 	if start > end && start > 0 && end > 0 {
 		return []string{}
 	}
-	
+
 	if start < 0 && int(math.Abs(float64(start))) > len(list) {
 		start = 0
 	}
-	
+
 	if end < 0 && int(math.Abs(float64(end))) > len(list) {
 		end = 0
 	}
