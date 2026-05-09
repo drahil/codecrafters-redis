@@ -1,5 +1,7 @@
 package store
 
+import "math"
+
 type Entry struct {
 	Value      string
 	ExpireTime int64
@@ -50,6 +52,14 @@ func (s *Store) LRange(key string, start, end int) []string {
 
 	if start > end && start > 0 && end > 0 {
 		return []string{}
+	}
+	
+	if start < 0 && int(math.Abs(float64(start))) > len(list) {
+		start = 0
+	}
+	
+	if end < 0 && int(math.Abs(float64(end))) > len(list) {
+		end = 0
 	}
 
 	if start < 0 {
