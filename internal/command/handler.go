@@ -118,6 +118,11 @@ func (h *Handler) llen(args []string) string {
 
 func (h *Handler) lpop(args []string) string {
 	listName := args[1]
+	numberOfElementsToRemove := -1
+
+	if len(args) == 3 {
+		numberOfElementsToRemove, _ = strconv.Atoi(args[2])
+	}
 
 	if listName == "" {
 		return resp.NullBulkString()
@@ -127,6 +132,6 @@ func (h *Handler) lpop(args []string) string {
 		return resp.NullBulkString()
 	}
 
-	result := h.store.LPop(listName)
+	result := h.store.LPop(listName, numberOfElementsToRemove)
 	return resp.BulkString(result)
 }

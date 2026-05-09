@@ -85,9 +85,15 @@ func (s *Store) Length(listName string) int {
 	return len(s.Lists[listName])
 }
 
-func (s *Store) LPop(listName string) string {
+func (s *Store) LPop(listName string, numbersOfElementsToRemove int) string {
+	index := 1
+
+	if numbersOfElementsToRemove != -1 {
+		index = numbersOfElementsToRemove - 1
+	}
+
 	result := s.Lists[listName][0]
-	s.Lists[listName] = s.Lists[listName][1:]
+	s.Lists[listName] = s.Lists[listName][index:]
 
 	return result
 }
