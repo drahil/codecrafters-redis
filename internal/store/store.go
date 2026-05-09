@@ -1,7 +1,5 @@
 package store
 
-import "golang.org/x/tools/go/analysis/passes/ifaceassert"
-
 type Entry struct {
 	Value      string
 	ExpireTime int64
