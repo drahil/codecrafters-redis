@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"github.com/codecrafters-io/redis-starter-go/internal/resp"
 )
 
 // Ensures gofmt doesn't remove the "net" and "os" imports in stage 1 (feel free to remove this!)
@@ -61,7 +62,7 @@ func handleConnection(conn net.Conn) {
 			conn.Write([]byte("+PONG\r\n"))
 		case "echo":
 			if len(args) > 1 {
-				conn.Write([]byte(respEncoder(args[1])))
+				conn.Write([]byte(resp.BulkString(args[1])))
 			}
 		case "set":
 			conn.Write([]byte(setValue(args, db)))
@@ -124,35 +125,6 @@ func getArgs(conn net.Conn) ([]string, error) {
 	return args, err
 }
 
-func respEncoder(raw string) string {
-	// $<length>\r\n<data>\r\n
-	return fmt.Sprintf("$%d\r\n%s\r\n", len(raw), raw)
-}
-
-func simpleEncoder(raw string) string {
-	return fmt.Sprintf("+%s\r\n", raw)
-}
-
-func respInteger(raw int) string {
-	stringRaw := strconv.Itoa(raw)
-	return fmt.Sprintf(":%s\r\n", stringRaw)
-}
-
-func respArray(values []string) string {
-	if len(values) == 0 {
-		return "*0\r\n"
-	}
-
-	var builder strings.Builder
-	builder.WriteString(fmt.Sprintf("*%d\r\n", len(values)))
-
-	for _, value := range values {
-		builder.WriteString(respEncoder(value))
-	}
-
-	return builder.String()
-}
-
 func setValue(args []string, db map[string]Entry) string {
 	var expireTime int64 = -1
 
@@ -169,7 +141,7 @@ func setValue(args []string, db map[string]Entry) string {
 	}
 
 	db[args[1]] = Entry{Value: args[2], ExpireTime: expireTime}
-	return simpleEncoder("OK")
+	return resp.SimpleString("OK")
 }
 
 func getValue(entry Entry) string {
@@ -178,13 +150,13 @@ func getValue(entry Entry) string {
 	}
 
 	if entry.ExpireTime == -1 {
-		return respEncoder(entry.Value)
+		return resp.BulkString(entry.Value)
 	}
 
 	nowMs := time.Now().UnixMilli()
 
 	if nowMs <= entry.ExpireTime {
-		return respEncoder(entry.Value)
+		return resp.BulkString(entry.Value)
 	}
 
 	return "$-1\r\n"
@@ -200,7 +172,7 @@ func rpushValue(args []string, lists map[string][]string) string {
 		lists[listName] = values
 	}
 
-	return respInteger(len(lists[listName]))
+	return resp.Integer(len(lists[listName]))
 }
 
 func lrange(args []string, lists map[string][]string) string {
@@ -210,18 +182,18 @@ func lrange(args []string, lists map[string][]string) string {
 	
 	if existingList, ok := lists[listName]; ok {
 		if startingIndex >= int64(len(existingList)) {
-			return respArray([]string{})
+			return resp.Array([]string{})
 		}
 		
 		if endingIndex >= int64(len(existingList)) {
-			return respArray(existingList[startingIndex:len(existingList)])
+			return resp.Array(existingList[startingIndex:len(existingList)])
 		}
 		
 		if startingIndex > endingIndex {
-			return respArray([]string{})
+			return resp.Array([]string{})
 		}
-		return respArray(existingList[startingIndex:endingIndex+1])
+		return resp.Array(existingList[startingIndex:endingIndex+1])
 	}
 	
-	return respArray([]string{})
+	return resp.Array([]string{})
 }
