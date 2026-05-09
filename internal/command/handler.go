@@ -133,5 +133,9 @@ func (h *Handler) lpop(args []string) string {
 	}
 
 	result := h.store.LPop(listName, numberOfElementsToRemove)
+
+	if len(result) == 1 {
+		return resp.BulkString(result[0])
+	}
 	return resp.Array(result)
 }
