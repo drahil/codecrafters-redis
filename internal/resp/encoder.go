@@ -16,8 +16,7 @@ func SimpleString(raw string) string {
 }
 
 func Integer(raw int) string {
-	stringRaw := strconv.Itoa(raw)
-	return fmt.Sprintf(":%s\r\n", stringRaw)
+	return fmt.Sprintf(":%d\r\n", raw)
 }
 
 func Array(values []string) string {
