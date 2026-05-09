@@ -214,13 +214,13 @@ func lrange(args []string, lists map[string][]string) string {
 		}
 		
 		if endingIndex >= int64(len(existingList)) {
-			return respArray(existingList[startingIndex:len(existingList)-1])
+			return respArray(existingList[startingIndex:len(existingList)])
 		}
 		
 		if startingIndex > endingIndex {
 			return respArray([]string{})
 		}
-		return respArray(existingList[startingIndex:endingIndex])
+		return respArray(existingList[startingIndex:endingIndex+1])
 	}
 	
 	return respArray([]string{})
