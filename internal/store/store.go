@@ -53,11 +53,11 @@ func (s *Store) LRange(key string, start, end int) []string {
 	}
 
 	if start < 0 {
-		start = len(list) + 1 - start
+		start = len(list) + 1 + start
 	}
 
 	if end < 0 {
-		end = len(list) + 1 - end
+		end = len(list) + 1 + end
 	}
 
 	return list[start : end+1]
