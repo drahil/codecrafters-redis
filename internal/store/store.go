@@ -35,3 +35,8 @@ func (s *Store) Get(key string) (Entry, bool) {
 	entry, ok := s.Strings[key]
     return entry, ok
 }
+
+func (s *Store) RPush(key string, values ...string) int {
+   s.Lists[key] = append(s.Lists[key], values...)
+   return len(s.Lists[key])
+}
