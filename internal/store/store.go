@@ -37,7 +37,10 @@ func (s *Store) RPush(key string, values ...string) int {
 }
 
 func (s *Store) LPush(key string, values ...string) int {
-	s.Lists[key] = append(values, s.Lists[key]...)
+	for _, value := range values {
+		s.Lists[key] = append([]string{value}, s.Lists[key]...)
+	}
+
 	return len(s.Lists[key])
 }
 
