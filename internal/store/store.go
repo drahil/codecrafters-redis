@@ -1,0 +1,26 @@
+package store
+
+type Entry struct {
+	Value string
+	ExpireTime int64
+}
+
+type Store struct {
+	Strings map[string]Entry
+	Lists map[string][]string
+}
+
+
+func New() *Store {
+	return &Store {Strings: nil, Lists: nil}
+}
+
+// func (s *Store) Set(key, value string, expireTime int64)
+// func (s *Store) Get(key string) (string, bool)
+
+// func (s *Store) RPush(key string, values ...string) int
+// func (s *Store) LRange(key string, start, end int) []string
+
+func (s *Store) Set(key, value string, expireTime int64) {
+	
+}

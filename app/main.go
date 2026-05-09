@@ -7,16 +7,12 @@ import (
 	"strconv"
 	"time"
 	"github.com/codecrafters-io/redis-starter-go/internal/resp"
+	"github.com/codecrafters-io/redis-starter-go/internal/store"
 )
 
 // Ensures gofmt doesn't remove the "net" and "os" imports in stage 1 (feel free to remove this!)
 var _ = net.Listen
 var _ = os.Exit
-
-type Entry struct {
-	Value      string
-	ExpireTime int64
-}
 
 func main() {
 	// You can use print statements as follows for debugging, they'll be visible when running tests.
@@ -29,6 +25,8 @@ func main() {
 		fmt.Println("Failed to bind to port 6379")
 		os.Exit(1)
 	}
+	
+	store := store.New()
 
 	for {
 		conn, err := l.Accept()
@@ -36,15 +34,13 @@ func main() {
 			fmt.Println("Error accepting connection: ", err.Error())
 			os.Exit(1)
 		}
-		go handleConnection(conn)
+		go handleConnection(conn, store)
 	}
 }
 
-func handleConnection(conn net.Conn) {
+func handleConnection(conn net.Conn, store *store.Store) {
 	defer conn.Close()
-	db := make(map[string]Entry)
-	lists := make(map[string][]string)
-
+	
 	for {
 		args, err := resp.GetArgs(conn)
 
@@ -64,21 +60,21 @@ func handleConnection(conn net.Conn) {
 				conn.Write([]byte(resp.BulkString(args[1])))
 			}
 		case "set":
-			conn.Write([]byte(setValue(args, db)))
+			conn.Write([]byte(setValue(args, store)))
 		case "get":
-			conn.Write([]byte(getValue(db[args[1]])))
+			conn.Write([]byte(getValue(store.Strings[args[1]])))
 		case "rpush":
-			conn.Write([]byte(rpushValue(args, lists)))
+			conn.Write([]byte(rpushValue(args, store.Lists)))
 		case "lrange":
-			conn.Write([]byte(lrange(args, lists)))
+			conn.Write([]byte(lrange(args, store.Lists)))
 		}
 			
 	}
 }
 
-func setValue(args []string, db map[string]Entry) string {
+func setValue(args []string, store *store.Store) string {
 	var expireTime int64 = -1
-
+	
 	if len(args) > 3 && args[3] == "ex" {
 		expireTime, _ = strconv.ParseInt(args[4], 10, 64)
 		expireTime *= 1000
@@ -90,10 +86,12 @@ func setValue(args []string, db map[string]Entry) string {
 		nowMs := time.Now().UnixMilli()
 		expireTime = expireTime + nowMs
 	}
+	
+	store.Set(args[0], args[1], expireTime)
 
-	db[args[1]] = Entry{Value: args[2], ExpireTime: expireTime}
 	return resp.SimpleString("OK")
 }
+
 
 func getValue(entry Entry) string {
 	if entry.Value == "" {
