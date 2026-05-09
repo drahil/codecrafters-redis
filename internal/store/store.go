@@ -92,8 +92,8 @@ func (s *Store) LPop(listName string, numbersOfElementsToRemove int) []string {
 		index = numbersOfElementsToRemove - 1
 	}
 
-	result := s.Lists[listName][:index]
-	s.Lists[listName] = s.Lists[listName][index:]
+	result := s.Lists[listName][:index+1]
+	s.Lists[listName] = s.Lists[listName][index+1:]
 
 	return result
 }
