@@ -2,12 +2,12 @@ package main
 
 import (
 	"fmt"
+	"github.com/codecrafters-io/redis-starter-go/internal/resp"
+	"github.com/codecrafters-io/redis-starter-go/internal/store"
 	"net"
 	"os"
 	"strconv"
 	"time"
-	"github.com/codecrafters-io/redis-starter-go/internal/resp"
-	"github.com/codecrafters-io/redis-starter-go/internal/store"
 )
 
 // Ensures gofmt doesn't remove the "net" and "os" imports in stage 1 (feel free to remove this!)
@@ -25,7 +25,7 @@ func main() {
 		fmt.Println("Failed to bind to port 6379")
 		os.Exit(1)
 	}
-	
+
 	store := store.New()
 
 	for {
@@ -40,7 +40,7 @@ func main() {
 
 func handleConnection(conn net.Conn, store *store.Store) {
 	defer conn.Close()
-	
+
 	for {
 		args, err := resp.GetArgs(conn)
 
@@ -68,13 +68,13 @@ func handleConnection(conn net.Conn, store *store.Store) {
 		case "lrange":
 			conn.Write([]byte(lrange(args, store.Lists)))
 		}
-			
+
 	}
 }
 
 func setValue(args []string, store *store.Store) string {
 	var expireTime int64 = -1
-	
+
 	if len(args) > 3 && args[3] == "ex" {
 		expireTime, _ = strconv.ParseInt(args[4], 10, 64)
 		expireTime *= 1000
@@ -86,16 +86,15 @@ func setValue(args []string, store *store.Store) string {
 		nowMs := time.Now().UnixMilli()
 		expireTime = expireTime + nowMs
 	}
-	
+
 	store.Set(args[1], args[2], expireTime)
 
 	return resp.SimpleString("OK")
 }
 
-
 func getValue(key string, store *store.Store) string {
-	entry, _  := store.Get(key)
-	
+	entry, _ := store.Get(key)
+
 	if entry.Value == "" {
 		return "$-1\r\n"
 	}
@@ -114,33 +113,33 @@ func getValue(key string, store *store.Store) string {
 }
 
 func rpushValue(args []string, store *store.Store) string {
-    listName := args[1]
-    values := args[2:]
+	listName := args[1]
+	values := args[2:]
 
-    length := store.RPush(listName, values...)
+	length := store.RPush(listName, values...)
 
-    return resp.Integer(length)
+	return resp.Integer(length)
 }
 
 func lrange(args []string, lists map[string][]string) string {
 	listName := args[1]
 	startingIndex, _ := strconv.ParseInt(args[2], 10, 64)
 	endingIndex, _ := strconv.ParseInt(args[3], 10, 64)
-	
+
 	if existingList, ok := lists[listName]; ok {
 		if startingIndex >= int64(len(existingList)) {
 			return resp.Array([]string{})
 		}
-		
+
 		if endingIndex >= int64(len(existingList)) {
 			return resp.Array(existingList[startingIndex:len(existingList)])
 		}
-		
+
 		if startingIndex > endingIndex {
 			return resp.Array([]string{})
 		}
-		return resp.Array(existingList[startingIndex:endingIndex+1])
+		return resp.Array(existingList[startingIndex : endingIndex+1])
 	}
-	
+
 	return resp.Array([]string{})
 }

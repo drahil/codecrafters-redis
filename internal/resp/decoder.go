@@ -2,9 +2,9 @@ package resp
 
 import (
 	"fmt"
-	"strings"
-	"strconv"
 	"net"
+	"strconv"
+	"strings"
 )
 
 func parseMessage(message string) []string {
