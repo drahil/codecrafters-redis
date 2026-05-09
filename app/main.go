@@ -93,7 +93,7 @@ func setValue(args []string, store *store.Store) string {
 }
 
 
-func getValue(entry Entry) string {
+func getValue(entry store.Entry) string {
 	if entry.Value == "" {
 		return "$-1\r\n"
 	}
