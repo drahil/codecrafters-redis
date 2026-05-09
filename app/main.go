@@ -66,7 +66,7 @@ func handleConnection(conn net.Conn, store *store.Store) {
 		case "rpush":
 			conn.Write([]byte(rpushValue(args, store)))
 		case "lrange":
-			conn.Write([]byte(lrange(args, store.Lists)))
+			conn.Write([]byte(lrange(args, store)))
 		}
 
 	}
@@ -121,25 +121,14 @@ func rpushValue(args []string, store *store.Store) string {
 	return resp.Integer(length)
 }
 
-func lrange(args []string, lists map[string][]string) string {
+func lrange(args []string, store *store.Store) string {
 	listName := args[1]
-	startingIndex, _ := strconv.ParseInt(args[2], 10, 64)
-	endingIndex, _ := strconv.ParseInt(args[3], 10, 64)
 
-	if existingList, ok := lists[listName]; ok {
-		if startingIndex >= int64(len(existingList)) {
-			return resp.Array([]string{})
-		}
+	start, _ := strconv.Atoi(args[2])
+	end, _ := strconv.Atoi(args[3])
 
-		if endingIndex >= int64(len(existingList)) {
-			return resp.Array(existingList[startingIndex:len(existingList)])
-		}
+	values := store.LRange(listName, start, end)
 
-		if startingIndex > endingIndex {
-			return resp.Array([]string{})
-		}
-		return resp.Array(existingList[startingIndex : endingIndex+1])
-	}
+	return resp.Array(values)
 
-	return resp.Array([]string{})
 }

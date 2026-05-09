@@ -17,12 +17,6 @@ func New() *Store {
 	}
 }
 
-// func (s *Store) Set(key, value string, expireTime int64)
-// func (s *Store) Get(key string) (string, bool)
-
-// func (s *Store) RPush(key string, values ...string) int
-// func (s *Store) LRange(key string, start, end int) []string
-
 func (s *Store) Set(key, value string, expireTime int64) {
 	s.Strings[key] = Entry{
 		Value:      value,
@@ -38,4 +32,25 @@ func (s *Store) Get(key string) (Entry, bool) {
 func (s *Store) RPush(key string, values ...string) int {
 	s.Lists[key] = append(s.Lists[key], values...)
 	return len(s.Lists[key])
+}
+
+func (s *Store) LRange(key string, start, end int) []string {
+	list, ok := s.Lists[key]
+	if !ok {
+		return []string{}
+	}
+
+	if start >= len(list) {
+		return []string{}
+	}
+
+	if end >= len(list) {
+		end = len(list) - 1
+	}
+
+	if start > end {
+		return []string{}
+	}
+
+	return list[start : end+1]
 }
