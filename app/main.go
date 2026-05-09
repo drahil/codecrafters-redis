@@ -4,9 +4,6 @@ import (
 	"fmt"
 	"net"
 	"os"
-	"strconv"
-	"time"
-
 	"github.com/codecrafters-io/redis-starter-go/internal/command"
 	"github.com/codecrafters-io/redis-starter-go/internal/resp"
 	"github.com/codecrafters-io/redis-starter-go/internal/store"
