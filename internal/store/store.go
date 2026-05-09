@@ -30,3 +30,8 @@ func (s *Store) Set(key, value string, expireTime int64) {
 	        ExpireTime: expireTime,
 	   }
 }
+
+func (s *Store) Get(key string) (Entry, bool) {
+	entry, ok := s.Strings[key]
+    return entry, ok
+}
