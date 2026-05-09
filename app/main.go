@@ -62,7 +62,7 @@ func handleConnection(conn net.Conn, store *store.Store) {
 		case "set":
 			conn.Write([]byte(setValue(args, store)))
 		case "get":
-			conn.Write([]byte(getValue(args[1])))
+			conn.Write([]byte(getValue(args[1], store)))
 		case "rpush":
 			conn.Write([]byte(rpushValue(args, store.Lists)))
 		case "lrange":
@@ -93,7 +93,7 @@ func setValue(args []string, store *store.Store) string {
 }
 
 
-func getValue(key string) string {
+func getValue(key string, store *store.Store) string {
 	entry, _  := store.Get(key)
 	
 	if entry.Value == "" {
