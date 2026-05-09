@@ -12,7 +12,10 @@ type Store struct {
 
 
 func New() *Store {
-	return &Store {Strings: nil, Lists: nil}
+	return &Store{
+          Strings: make(map[string]Entry),
+          Lists:   make(map[string][]string),
+      }
 }
 
 // func (s *Store) Set(key, value string, expireTime int64)

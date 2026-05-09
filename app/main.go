@@ -87,7 +87,7 @@ func setValue(args []string, store *store.Store) string {
 		expireTime = expireTime + nowMs
 	}
 	
-	store.Set(args[0], args[1], expireTime)
+	store.Set(args[1], args[2], expireTime)
 
 	return resp.SimpleString("OK")
 }
