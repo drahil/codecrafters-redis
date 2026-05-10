@@ -147,14 +147,14 @@ func (h *Handler) lpop(args []string) string {
 }
 
 func (h *Handler) blpop(args []string) string {
-	lPopResult := h.lpop(args)
+	listName := args[1]
 
-	if lPopResult != resp.NullBulkString() {
-		return lPopResult
+	if h.store.Length(listName) > 0 {
+		result := h.store.LPop(listName, 1)
+		return resp.Array([]string{listName, result[0]})
 	}
 
-	listName := args[1]
-	timeoutSeconds, _ := strconv.Atoi(args[2])
+	timeoutSeconds, _ := strconv.ParseFloat(args[2], 64)
 
 	ch := make(chan []string)
 	h.store.AddBlockedClient(listName, ch)
@@ -167,7 +167,8 @@ func (h *Handler) blpop(args []string) string {
 	select {
 	case result := <-ch:
 		return resp.Array(result)
-	case <-time.After(time.Duration(timeoutSeconds) * time.Second):
+	case <-time.After(time.Duration(timeoutSeconds * float64(time.Second))):
+		h.store.RemoveBlockedClient(listName, ch)
 		return resp.NullArray()
 	}
 }

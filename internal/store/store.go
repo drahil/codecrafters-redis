@@ -29,6 +29,16 @@ func (s *Store) AddBlockedClient(listName string, ch chan []string) {
 	s.BlockedClients[listName] = append(s.BlockedClients[listName], ch)
 }
 
+func (s *Store) RemoveBlockedClient(listName string, ch chan []string) {
+	clients := s.BlockedClients[listName]
+	for i, client := range clients {
+		if client == ch {
+			s.BlockedClients[listName] = append(clients[:i], clients[i+1:]...)
+			return
+		}
+	}
+}
+
 func (s *Store) Set(key, value string, expireTime int64) {
 	s.Strings[key] = Entry{
 		Value:      value,
