@@ -42,34 +42,40 @@ func (s *Store) Get(key string) (Entry, bool) {
 }
 
 func (s *Store) RPush(key string, values ...string) int {
+	consumed := 0
+
 	for _, value := range values {
 		if len(s.BlockedClients[key]) > 0 {
 			ch := s.BlockedClients[key][0]
 			s.BlockedClients[key] = s.BlockedClients[key][1:]
 
 			ch <- []string{key, value}
+			consumed++
 			continue
 		}
 
 		s.Lists[key] = append(s.Lists[key], value)
 	}
 
-	return len(s.Lists[key])
+	return len(s.Lists[key]) + consumed
 }
 
 func (s *Store) LPush(key string, values ...string) int {
+	consumed := 0
+
 	for _, value := range values {
 		if len(s.BlockedClients[key]) > 0 {
 			ch := s.BlockedClients[key][0]
 			s.BlockedClients[key] = s.BlockedClients[key][1:]
 			ch <- []string{key, value}
+			consumed++
 			continue
 		}
 
 		s.Lists[key] = append([]string{value}, s.Lists[key]...)
 	}
 
-	return len(s.Lists[key])
+	return len(s.Lists[key]) + consumed
 }
 
 func (s *Store) LRange(key string, start, end int) []string {
