@@ -8,15 +8,25 @@ type Entry struct {
 }
 
 type Store struct {
-	Strings map[string]Entry
-	Lists   map[string][]string
+	Strings        map[string]Entry
+	Lists          map[string][]string
+	BlockedClients map[string][]chan []string
+}
+
+type BlockedClient struct {
+	response chan []string
 }
 
 func New() *Store {
 	return &Store{
-		Strings: make(map[string]Entry),
-		Lists:   make(map[string][]string),
+		Strings:        make(map[string]Entry),
+		Lists:          make(map[string][]string),
+		BlockedClients: make(map[string][]chan []string),
 	}
+}
+
+func (s *Store) AddBlockedClient(listName string, ch chan []string) {
+	s.BlockedClients[listName] = append(s.BlockedClients[listName], ch)
 }
 
 func (s *Store) Set(key, value string, expireTime int64) {
@@ -32,12 +42,30 @@ func (s *Store) Get(key string) (Entry, bool) {
 }
 
 func (s *Store) RPush(key string, values ...string) int {
-	s.Lists[key] = append(s.Lists[key], values...)
+	for _, value := range values {
+		if len(s.BlockedClients[key]) > 0 {
+			ch := s.BlockedClients[key][0]
+			s.BlockedClients[key] = s.BlockedClients[key][1:]
+
+			ch <- []string{key, value}
+			continue
+		}
+
+		s.Lists[key] = append(s.Lists[key], value)
+	}
+
 	return len(s.Lists[key])
 }
 
 func (s *Store) LPush(key string, values ...string) int {
 	for _, value := range values {
+		if len(s.BlockedClients[key]) > 0 {
+			ch := s.BlockedClients[key][0]
+			s.BlockedClients[key] = s.BlockedClients[key][1:]
+			ch <- []string{key, value}
+			continue
+		}
+
 		s.Lists[key] = append([]string{value}, s.Lists[key]...)
 	}
 

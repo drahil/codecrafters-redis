@@ -36,6 +36,8 @@ func (h *Handler) Handle(args []string) string {
 		return h.llen(args)
 	case "lpop":
 		return h.lpop(args)
+	case "blpop":
+		return h.blpop(args)
 	}
 
 	return resp.SimpleString("OK")
@@ -142,4 +144,30 @@ func (h *Handler) lpop(args []string) string {
 		return resp.BulkString(result[0])
 	}
 	return resp.Array(result)
+}
+
+func (h *Handler) blpop(args []string) string {
+	lPopResult := h.lpop(args)
+
+	if lPopResult != resp.NullBulkString() {
+		return lPopResult
+	}
+
+	listName := args[1]
+	timeoutSeconds, _ := strconv.Atoi(args[2])
+
+	ch := make(chan []string)
+	h.store.AddBlockedClient(listName, ch)
+
+	if timeoutSeconds == 0 {
+		result := <-ch
+		return resp.Array(result)
+	}
+
+	select {
+	case result := <-ch:
+		return resp.Array(result)
+	case <-time.After(time.Duration(timeoutSeconds) * time.Second):
+		return resp.NullArray()
+	}
 }

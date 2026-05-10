@@ -36,3 +36,7 @@ func Array(values []string) string {
 func NullBulkString() string {
 	return "$-1\r\n"
 }
+
+func NullArray() string {
+	return "*-1\r\n"
+}
