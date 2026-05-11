@@ -38,6 +38,8 @@ func (h *Handler) Handle(args []string) string {
 		return h.lpop(args)
 	case "blpop":
 		return h.blpop(args)
+	case "type":
+		return h.getType(args)
 	}
 
 	return resp.SimpleString("OK")
@@ -171,4 +173,8 @@ func (h *Handler) blpop(args []string) string {
 		h.store.RemoveBlockedClient(listName, ch)
 		return resp.NullArray()
 	}
+}
+
+func (h *Handler) getType(args []string) string {
+	return resp.SimpleString(h.store.Type(args[1]))	
 }

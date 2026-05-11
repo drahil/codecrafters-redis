@@ -135,3 +135,15 @@ func (s *Store) LPop(listName string, count int) []string {
 
 	return result
 }
+
+func (s *Store) Type (key string) string {
+	if _, ok := s.Strings[key]; ok {
+		return "string"
+	}
+
+	if _, ok := s.Lists[key]; ok {
+		return "list"
+	}
+
+	return "none"
+}
