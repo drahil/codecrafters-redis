@@ -11,11 +11,16 @@ type Store struct {
 	Strings        map[string]Entry
 	Lists          map[string][]string
 	BlockedClients map[string][]chan []string
-	Streams map[string][]string
+	Streams        map[string][]StreamEntry
 }
 
 type BlockedClient struct {
 	response chan []string
+}
+
+type StreamEntry struct {
+	ID     string
+	Fields map[string]string
 }
 
 func New() *Store {
@@ -23,7 +28,7 @@ func New() *Store {
 		Strings:        make(map[string]Entry),
 		Lists:          make(map[string][]string),
 		BlockedClients: make(map[string][]chan []string),
-		Streams: make(map[string][]string),
+		Streams:        make(map[string][]StreamEntry),
 	}
 }
 
@@ -147,9 +152,20 @@ func (s *Store) Type(key string) string {
 		return "list"
 	}
 
+	if _, ok := s.Streams[key]; ok {
+		return "stream"
+	}
+
 	return "none"
 }
 
 func (s *Store) NewStream(streamName, id, key, value string) string {
+	s.Streams[streamName] = append(s.Streams[streamName], StreamEntry{
+		ID: id,
+		Fields: map[string]string{
+			key: value,
+		},
+	})
+
 	return id
 }
