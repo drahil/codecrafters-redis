@@ -186,6 +186,7 @@ func (h *Handler) xadd(args []string) string {
 	id := args[2]
 	key := args[3]
 	value := args[4]
-	
-	return h.store.NewStream(stream, id, key, value)
+
+	response := h.store.NewStream(stream, id, key, value)
+	return resp.BulkString(response)
 }
