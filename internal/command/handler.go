@@ -40,6 +40,8 @@ func (h *Handler) Handle(args []string) string {
 		return h.blpop(args)
 	case "type":
 		return h.getType(args)
+	case "xadd":
+		return h.xadd(args)
 	}
 
 	return resp.SimpleString("OK")
@@ -176,5 +178,14 @@ func (h *Handler) blpop(args []string) string {
 }
 
 func (h *Handler) getType(args []string) string {
-	return resp.SimpleString(h.store.Type(args[1]))	
+	return resp.SimpleString(h.store.Type(args[1]))
+}
+
+func (h *Handler) xadd(args []string) string {
+	stream := args[1]
+	id := args[2]
+	key := args[3]
+	value := args[4]
+	
+	return h.store.NewStream(stream, id, key, value)
 }

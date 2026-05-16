@@ -11,6 +11,7 @@ type Store struct {
 	Strings        map[string]Entry
 	Lists          map[string][]string
 	BlockedClients map[string][]chan []string
+	Streams map[string][]string
 }
 
 type BlockedClient struct {
@@ -22,6 +23,7 @@ func New() *Store {
 		Strings:        make(map[string]Entry),
 		Lists:          make(map[string][]string),
 		BlockedClients: make(map[string][]chan []string),
+		Streams: make(map[string][]string),
 	}
 }
 
@@ -136,7 +138,7 @@ func (s *Store) LPop(listName string, count int) []string {
 	return result
 }
 
-func (s *Store) Type (key string) string {
+func (s *Store) Type(key string) string {
 	if _, ok := s.Strings[key]; ok {
 		return "string"
 	}
@@ -146,4 +148,8 @@ func (s *Store) Type (key string) string {
 	}
 
 	return "none"
+}
+
+func (s *Store) NewStream(streamName, id, key, value string) string {
+	return id
 }
