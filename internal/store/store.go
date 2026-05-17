@@ -189,15 +189,15 @@ func (s *Store) ValidateIdForStream(streamName, id string) (bool, error) {
 	latestIdMicroSeconds, latestIdSequenceNumber := parseStreamID(latestId)
 	idMicroSeconds, idSequenceNumber := parseStreamID(id)
 
-	if latestIdSequenceNumber == "*" {
-		latestIdSequenceNumber = "0"
+	if idSequenceNumber == "*" {
+		idSequenceNumber = "0"
 		
 		if latestIdMicroSeconds == idMicroSeconds {
-			latestIdSequenceNumber = "1"
+			idSequenceNumber = "1"
 		}
 
-		if latestIdMicroSeconds == "0" {
-			latestIdSequenceNumber = "1"
+		if latestIdSequenceNumber == "0" {
+			idSequenceNumber = "1"
 		}
 	}
 
