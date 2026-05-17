@@ -175,20 +175,25 @@ func (s *Store) NewStream(streamName, id, key, value string) string {
 	return id
 }
 
-func (s *Store) ValidateIdForStream(streamName, id string) (bool, error) {
+func (s *Store) ValidateIdForStream(streamName, id string) (string, error) {
 	if id == "0-0" {
 		err := errors.New("The ID specified in XADD must be greater than 0-0")
-		return false, err
+		return id, err
 	}
 
 	if len(s.Streams[streamName]) == 0 {
-		return true, nil
+		return id, nil
 	}
 
 	latestId := s.Streams[streamName][len(s.Streams[streamName])-1].ID
 	latestIdMicroSeconds, latestIdSequenceNumber := parseStreamID(latestId)
 	idMicroSeconds, idSequenceNumber := parseStreamID(id)
 
+	latestIdMicroSecondsInt, _ := strconv.Atoi(latestIdMicroSeconds)
+	idMicroSecondsInt, _ := strconv.Atoi(idMicroSeconds)
+	latestIdSequenceNumberInt, _ := strconv.Atoi(latestIdSequenceNumber)
+	idSequenceNumberInt, _ := strconv.Atoi(idSequenceNumber)
+	
 	if idSequenceNumber == "*" {
 		idSequenceNumber = "0"
 		
@@ -201,22 +206,17 @@ func (s *Store) ValidateIdForStream(streamName, id string) (bool, error) {
 		}
 	}
 
-	latestIdMicroSecondsInt, _ := strconv.Atoi(latestIdMicroSeconds)
-	idMicroSecondsInt, _ := strconv.Atoi(idMicroSeconds)
-	latestIdSequenceNumberInt, _ := strconv.Atoi(latestIdSequenceNumber)
-	idSequenceNumberInt, _ := strconv.Atoi(idSequenceNumber)
-	
 	if latestIdMicroSecondsInt > idMicroSecondsInt {
 		err := errors.New("The ID specified in XADD is equal or smaller than the target stream top item")
-		return false, err
+		return id, err
 	}
 
 	if latestIdMicroSecondsInt == idMicroSecondsInt && latestIdSequenceNumberInt >= idSequenceNumberInt {
 		err := errors.New("The ID specified in XADD is equal or smaller than the target stream top item")
-		return false, err
+		return id, err
 	}
 
-	return true, nil
+	return id, nil
 }
 
 func parseStreamID(id string) (string,string) {

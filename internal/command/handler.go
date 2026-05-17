@@ -187,7 +187,7 @@ func (h *Handler) xadd(args []string) string {
 	key := args[3]
 	value := args[4]
 
-	_, err := h.store.ValidateIdForStream(stream, id)
+	id, err := h.store.ValidateIdForStream(stream, id)
 
 	if err != nil {
 		return resp.SimpleError(err.Error())
