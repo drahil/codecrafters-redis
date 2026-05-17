@@ -189,6 +189,18 @@ func (s *Store) ValidateIdForStream(streamName, id string) (bool, error) {
 	latestIdMicroSeconds, latestIdSequenceNumber := parseStreamID(latestId)
 	idMicroSeconds, idSequenceNumber := parseStreamID(id)
 
+	if latestIdSequenceNumber == "*" {
+		latestIdSequenceNumber = "0"
+		
+		if latestIdMicroSeconds == idMicroSeconds {
+			latestIdSequenceNumber = "1"
+		}
+
+		if latestIdMicroSeconds == "0" {
+			latestIdSequenceNumber = "1"
+		}
+	}
+
 	if latestIdMicroSeconds > idMicroSeconds {
 		err := errors.New("The ID specified in XADD is equal or smaller than the target stream top item")
 		return false, err
@@ -202,10 +214,10 @@ func (s *Store) ValidateIdForStream(streamName, id string) (bool, error) {
 	return true, nil
 }
 
-func parseStreamID(id string) (int, int) {
+func parseStreamID(id string) (string,string) {
 	parts := strings.SplitN(id, "-", 2)
-	milliseconds, _ := strconv.Atoi(parts[0])
-	sequenceNumber, _ := strconv.Atoi(parts[1])
+	milliseconds := parts[0]
+	sequenceNumber := parts[1]
 
 	return milliseconds, sequenceNumber
 }
