@@ -40,3 +40,7 @@ func NullBulkString() string {
 func NullArray() string {
 	return "*-1\r\n"
 }
+
+func SimpleError(errorMessage string) string {
+	return fmt.Sprintf("-ERR %s\r\n", errorMessage)
+}

@@ -1,6 +1,10 @@
 package store
 
-import "math"
+import (
+	"errors"
+	"math"
+	"strings"
+)
 
 type Entry struct {
 	Value      string
@@ -168,4 +172,27 @@ func (s *Store) NewStream(streamName, id, key, value string) string {
 	})
 
 	return id
+}
+
+func (s *Store) ValidateIdForStream(streamName, id string) (bool, error) {
+	if id == "0-0" {
+		err := errors.New("The ID specified in XADD must be greater than 0-0")
+		return false, err
+	}
+	
+	latestId := s.Streams[streamName][len(s.Streams[streamName]) - 1].ID
+	latestIdMicroSeconds, latestIdSequenceNumber, _ := strings.Cut(latestId, "-")
+	idMicroSeconds, idSequenceNumber, _ := strings.Cut(id, "-")
+
+	if latestIdMicroSeconds >= idMicroSeconds {
+		err := errors.New("The ID specified in XADD is equal or smaller than the target stream top item")
+		return false, err
+	}
+
+	if latestIdMicroSeconds == idMicroSeconds && latestIdSequenceNumber >= idSequenceNumber {
+		err := errors.New("The ID specified in XADD is equal or smaller than the target stream top item")
+		return false, err
+	}
+	
+	return true, nil
 }
