@@ -179,6 +179,10 @@ func (s *Store) ValidateIdForStream(streamName, id string) (bool, error) {
 		err := errors.New("The ID specified in XADD must be greater than 0-0")
 		return false, err
 	}
+
+	if len(s.Streams[streamName]) == 0 {
+		return true, nil
+	}
 	
 	latestId := s.Streams[streamName][len(s.Streams[streamName]) - 1].ID
 	latestIdMicroSeconds, latestIdSequenceNumber, _ := strings.Cut(latestId, "-")
