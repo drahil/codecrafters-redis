@@ -188,7 +188,7 @@ func (s *Store) ValidateIdForStream(streamName, id string) (bool, error) {
 	latestIdMicroSeconds, latestIdSequenceNumber, _ := strings.Cut(latestId, "-")
 	idMicroSeconds, idSequenceNumber, _ := strings.Cut(id, "-")
 
-	if latestIdMicroSeconds >= idMicroSeconds {
+	if latestIdMicroSeconds >= idMicroSeconds && latestIdSequenceNumber <= idSequenceNumber {
 		err := errors.New("The ID specified in XADD is equal or smaller than the target stream top item")
 		return false, err
 	}
