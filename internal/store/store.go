@@ -2,6 +2,7 @@ package store
 
 import (
 	"errors"
+	"fmt"
 	"math"
 	"strconv"
 	"strings"
@@ -181,13 +182,22 @@ func (s *Store) ValidateIdForStream(streamName, id string) (string, error) {
 		return id, err
 	}
 
+	idMicroSeconds, idSequenceNumber := parseStreamID(id)
+
 	if len(s.Streams[streamName]) == 0 {
+		if idSequenceNumber == "*" {
+			idSequenceNumber = "0"
+
+			if idMicroSeconds == "0" {
+				idSequenceNumber = "1"
+			}
+		}
+		id = fmt.Sprintf("%s-%s", idMicroSeconds, idSequenceNumber)
 		return id, nil
 	}
 
 	latestId := s.Streams[streamName][len(s.Streams[streamName])-1].ID
 	latestIdMicroSeconds, latestIdSequenceNumber := parseStreamID(latestId)
-	idMicroSeconds, idSequenceNumber := parseStreamID(id)
 
 	latestIdMicroSecondsInt, _ := strconv.Atoi(latestIdMicroSeconds)
 	idMicroSecondsInt, _ := strconv.Atoi(idMicroSeconds)
@@ -215,6 +225,8 @@ func (s *Store) ValidateIdForStream(streamName, id string) (string, error) {
 		err := errors.New("The ID specified in XADD is equal or smaller than the target stream top item")
 		return id, err
 	}
+
+	id = fmt.Sprintf("%s-%s", idMicroSeconds, idSequenceNumber)
 
 	return id, nil
 }
