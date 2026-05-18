@@ -6,6 +6,7 @@ import (
 	"math"
 	"strconv"
 	"strings"
+	"time"
 )
 
 type Entry struct {
@@ -184,6 +185,10 @@ func (s *Store) ValidateIdForStream(streamName, id string) (string, error) {
 
 	idMicroSeconds, idSequenceNumber := parseStreamID(id)
 
+	if idMicroSeconds == "*" {
+		idMicroSeconds = strconv.FormatInt(time.Now().UnixMilli(), 10)
+	}
+
 	if len(s.Streams[streamName]) == 0 {
 		if idSequenceNumber == "*" {
 			idSequenceNumber = "0"
@@ -198,7 +203,7 @@ func (s *Store) ValidateIdForStream(streamName, id string) (string, error) {
 
 	latestId := s.Streams[streamName][len(s.Streams[streamName])-1].ID
 	latestIdMicroSeconds, latestIdSequenceNumber := parseStreamID(latestId)
-	
+
 	if idSequenceNumber == "*" {
 		idSequenceNumber = "0"
 		
@@ -233,6 +238,11 @@ func (s *Store) ValidateIdForStream(streamName, id string) (string, error) {
 
 func parseStreamID(id string) (string,string) {
 	parts := strings.SplitN(id, "-", 2)
+
+	if len(parts) != 2 {
+	  	return "*", "*"
+    }
+
 	milliseconds := parts[0]
 	sequenceNumber := parts[1]
 
