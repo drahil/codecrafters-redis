@@ -42,6 +42,8 @@ func (h *Handler) Handle(args []string) string {
 		return h.getType(args)
 	case "xadd":
 		return h.xadd(args)
+	case "xrange":
+		return h.xrange(args)
 	}
 
 	return resp.SimpleString("OK")
@@ -195,4 +197,14 @@ func (h *Handler) xadd(args []string) string {
 
 	response := h.store.NewStream(stream, id, key, value)
 	return resp.BulkString(response)
+}
+
+func (h *Handler) xrange(args []string) string {
+	stream := args[1]
+	startId := args[2]
+	endId := args[3]
+
+	response := h.store.Xrange(stream, startId, endId)
+
+	return resp.Array(response)
 }

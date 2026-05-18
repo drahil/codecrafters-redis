@@ -206,7 +206,7 @@ func (s *Store) ValidateIdForStream(streamName, id string) (string, error) {
 
 	if idSequenceNumber == "*" {
 		idSequenceNumber = "0"
-		
+
 		if latestIdMicroSeconds == idMicroSeconds {
 			idSequenceNumber = "1"
 		}
@@ -236,15 +236,47 @@ func (s *Store) ValidateIdForStream(streamName, id string) (string, error) {
 	return id, nil
 }
 
-func parseStreamID(id string) (string,string) {
+func parseStreamID(id string) (string, string) {
 	parts := strings.SplitN(id, "-", 2)
 
 	if len(parts) != 2 {
-	  	return "*", "*"
-    }
+		return "*", "*"
+	}
 
 	milliseconds := parts[0]
 	sequenceNumber := parts[1]
 
 	return milliseconds, sequenceNumber
+}
+
+func (s *Store) Xrange(stream, startId, endId string) []any {
+	_, startIndex, _ := findStreamEntry(s.Streams[stream], startId)
+	_, endIndex, _ := findStreamEntry(s.Streams[stream], endId)
+
+	entries := s.Streams[stream][startIndex : endIndex+1]
+	result := make([]any, 0, len(entries))
+
+	for _, entry := range entries {
+		fields := make([]string, 0, len(entry.Fields)*2)
+
+		for key, value := range entry.Fields {
+			fields = append(fields, key, value)
+		}
+
+		result = append(result, []any{
+			entry.ID,
+			fields,
+		})
+	}
+
+	return result
+}
+
+func findStreamEntry(entries []StreamEntry, id string) (*StreamEntry, int, bool) {
+	for i := range entries {
+		if entries[i].ID == id {
+			return &entries[i], i, true
+		}
+	}
+	return nil, -1, false
 }
