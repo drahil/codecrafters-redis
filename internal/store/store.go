@@ -7,6 +7,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/codecrafters-io/redis-starter-go/internal/resp"
 )
 
 type Entry struct {
@@ -249,27 +251,27 @@ func parseStreamID(id string) (string, string) {
 	return milliseconds, sequenceNumber
 }
 
-func (s *Store) Xrange(stream, startId, endId string) []any {
+func (s *Store) Xrange(stream, startId, endId string) string {
 	_, startIndex, _ := findStreamEntry(s.Streams[stream], startId)
 	_, endIndex, _ := findStreamEntry(s.Streams[stream], endId)
 
 	entries := s.Streams[stream][startIndex : endIndex+1]
-	result := make([]any, 0, len(entries))
+	var builder strings.Builder
+
+	builder.WriteString(fmt.Sprintf("*%d\r\n", len(entries)))
 
 	for _, entry := range entries {
-		fields := make([]string, 0, len(entry.Fields)*2)
+		builder.WriteString("*2\r\n")
+		builder.WriteString(resp.BulkString(entry.ID))
+		builder.WriteString(fmt.Sprintf("*%d\r\n", len(entry.Fields)*2))
 
 		for key, value := range entry.Fields {
-			fields = append(fields, key, value)
+			builder.WriteString(resp.BulkString(key))
+			builder.WriteString(resp.BulkString(value))
 		}
-
-		result = append(result, []any{
-			entry.ID,
-			fields,
-		})
 	}
 
-	return result
+	return builder.String()
 }
 
 func findStreamEntry(entries []StreamEntry, id string) (*StreamEntry, int, bool) {

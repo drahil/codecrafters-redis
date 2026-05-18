@@ -204,7 +204,5 @@ func (h *Handler) xrange(args []string) string {
 	startId := args[2]
 	endId := args[3]
 
-	response := h.store.Xrange(stream, startId, endId)
-
-	return resp.Array(response)
+	return h.store.Xrange(stream, startId, endId)
 }
