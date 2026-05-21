@@ -44,6 +44,8 @@ func (h *Handler) Handle(args []string) string {
 		return h.xadd(args)
 	case "xrange":
 		return h.xrange(args)
+	case "xread":
+		return h.xread(args)
 	}
 
 	return resp.SimpleString("OK")
@@ -205,4 +207,11 @@ func (h *Handler) xrange(args []string) string {
 	endId := args[3]
 
 	return h.store.Xrange(stream, startId, endId)
+}
+
+func (h *Handler) xread(args []string) string {
+	stream := args[1]
+	startId := args[2]
+
+	return h.store.Xread(stream, startId)
 }

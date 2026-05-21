@@ -290,3 +290,25 @@ func findStreamEntry(entries []StreamEntry, id string) (int, bool) {
 	}
 	return -1, false
 }
+
+func (s *Store) Xread(stream, startId string) string {
+	startIndex, _ := findStreamEntry(s.Streams[stream], startId)
+
+	entries := s.Streams[stream][startIndex + 1:]
+	var builder strings.Builder
+
+	builder.WriteString(fmt.Sprintf("*%d\r\n", len(entries)))
+
+	for _, entry := range entries {
+		builder.WriteString("*2\r\n")
+		builder.WriteString(resp.BulkString(entry.ID))
+		builder.WriteString(fmt.Sprintf("*%d\r\n", len(entry.Fields)*2))
+
+		for key, value := range entry.Fields {
+			builder.WriteString(resp.BulkString(key))
+			builder.WriteString(resp.BulkString(value))
+		}
+	}
+
+	return builder.String()
+}
