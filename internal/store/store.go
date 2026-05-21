@@ -252,8 +252,8 @@ func parseStreamID(id string) (string, string) {
 }
 
 func (s *Store) Xrange(stream, startId, endId string) string {
-	_, startIndex, _ := findStreamEntry(s.Streams[stream], startId)
-	_, endIndex, _ := findStreamEntry(s.Streams[stream], endId)
+	startIndex, _ := findStreamEntry(s.Streams[stream], startId)
+	endIndex, _ := findStreamEntry(s.Streams[stream], endId)
 
 	entries := s.Streams[stream][startIndex : endIndex+1]
 	var builder strings.Builder
@@ -274,11 +274,14 @@ func (s *Store) Xrange(stream, startId, endId string) string {
 	return builder.String()
 }
 
-func findStreamEntry(entries []StreamEntry, id string) (*StreamEntry, int, bool) {
+func findStreamEntry(entries []StreamEntry, id string) (int, bool) {
+	if id == "-" {
+		return 0, true
+	}
 	for i := range entries {
 		if entries[i].ID == id {
-			return &entries[i], i, true
+			return i, true
 		}
 	}
-	return nil, -1, false
+	return -1, false
 }
