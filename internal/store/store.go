@@ -292,18 +292,41 @@ func findStreamEntry(entries []StreamEntry, id string) (int, bool) {
 	return -1, false
 }
 
-func (s *Store) Xread(stream, startId string) string {
+func (s *Store) Xread(streams, startIds []string) string {
+	var streamResponses []string
+
+	for i, stream := range streams {
+		response := s.xreadFromOneStream(stream, startIds[i])
+		if response != "" {
+			streamResponses = append(streamResponses, response)
+		}
+	}
+
+	if len(streamResponses) == 0 {
+		return resp.NullArray()
+	}
+
+	var builder strings.Builder
+	builder.WriteString(fmt.Sprintf("*%d\r\n", len(streamResponses)))
+
+	for _, response := range streamResponses {
+		builder.WriteString(response)
+	}
+
+	return builder.String()
+}
+
+func (s *Store) xreadFromOneStream(stream, startId string) string {
 	streamEntries := s.Streams[stream]
 	startIndex, ok := findFirstStreamEntryAfter(streamEntries, startId)
 
 	if !ok {
-		return resp.NullArray()
+		return ""
 	}
 
 	entries := streamEntries[startIndex:]
 	var builder strings.Builder
 
-	builder.WriteString("*1\r\n")
 	builder.WriteString("*2\r\n")
 	builder.WriteString(resp.BulkString(stream))
 	builder.WriteString(fmt.Sprintf("*%d\r\n", len(entries)))

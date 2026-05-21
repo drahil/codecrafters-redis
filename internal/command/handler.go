@@ -210,8 +210,9 @@ func (h *Handler) xrange(args []string) string {
 }
 
 func (h *Handler) xread(args []string) string {
-	stream := args[2]
-	startId := args[3]
+	streamCount := (len(args) - 2) / 2
+	streams := args[2 : 2+streamCount]
+	startIds := args[2+streamCount:]
 
-	return h.store.Xread(stream, startId)
+	return h.store.Xread(streams, startIds)
 }
