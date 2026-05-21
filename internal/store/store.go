@@ -288,11 +288,12 @@ func findStreamEntry(entries []StreamEntry, id string) (int, bool) {
 			return i, true
 		}
 	}
+	
 	return -1, false
 }
 
 func (s *Store) Xread(stream, startId string) string {
-	startIndex, _ := findStreamEntry(s.Streams[stream], startId)
+	startIndex, _ := findFirstStreamEntryAfter(s.Streams[stream], startId)
 
 	entries := s.Streams[stream][startIndex:]
 	var builder strings.Builder
@@ -312,3 +313,41 @@ func (s *Store) Xread(stream, startId string) string {
 
 	return builder.String()
 }
+
+func findFirstStreamEntryAfter(entries []StreamEntry, id string) (int, bool) {
+	for i := range entries {
+		if compareStreamIDs(entries[i].ID, id) > 0 {
+			return i, true
+		}
+	}
+
+	return -1, false
+}
+
+func compareStreamIDs(a, b string) int {
+	aMs, aSeq := parseStreamID(a)
+	bMs, bSeq := parseStreamID(b)
+
+	aMsInt, _ := strconv.Atoi(aMs)
+	bMsInt, _ := strconv.Atoi(bMs)
+
+	if aMsInt < bMsInt {
+		return -1
+	}
+	if aMsInt > bMsInt {
+		return 1
+	}
+
+	aSeqInt, _ := strconv.Atoi(aSeq)
+	bSeqInt, _ := strconv.Atoi(bSeq)
+
+	if aSeqInt < bSeqInt {
+		return -1
+	}
+	if aSeqInt > bSeqInt {
+		return 1
+	}
+
+	return 0
+}
+
