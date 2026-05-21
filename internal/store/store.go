@@ -294,7 +294,7 @@ func findStreamEntry(entries []StreamEntry, id string) (int, bool) {
 func (s *Store) Xread(stream, startId string) string {
 	startIndex, _ := findStreamEntry(s.Streams[stream], startId)
 
-	entries := s.Streams[stream][startIndex + 1:]
+	entries := s.Streams[stream][startIndex:]
 	var builder strings.Builder
 
 	builder.WriteString(fmt.Sprintf("*%d\r\n", len(entries)))
