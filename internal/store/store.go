@@ -282,22 +282,30 @@ func findStreamEntry(entries []StreamEntry, id string) (int, bool) {
 	if id == "+" {
 		return len(entries) - 1, true
 	}
-	
+
 	for i := range entries {
 		if entries[i].ID == id {
 			return i, true
 		}
 	}
-	
+
 	return -1, false
 }
 
 func (s *Store) Xread(stream, startId string) string {
-	startIndex, _ := findFirstStreamEntryAfter(s.Streams[stream], startId)
+	streamEntries := s.Streams[stream]
+	startIndex, ok := findFirstStreamEntryAfter(streamEntries, startId)
 
-	entries := s.Streams[stream][startIndex:]
+	if !ok {
+		return resp.NullArray()
+	}
+
+	entries := streamEntries[startIndex:]
 	var builder strings.Builder
 
+	builder.WriteString("*1\r\n")
+	builder.WriteString("*2\r\n")
+	builder.WriteString(resp.BulkString(stream))
 	builder.WriteString(fmt.Sprintf("*%d\r\n", len(entries)))
 
 	for _, entry := range entries {
@@ -350,4 +358,3 @@ func compareStreamIDs(a, b string) int {
 
 	return 0
 }
-
