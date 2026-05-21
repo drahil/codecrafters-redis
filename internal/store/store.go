@@ -278,6 +278,11 @@ func findStreamEntry(entries []StreamEntry, id string) (int, bool) {
 	if id == "-" {
 		return 0, true
 	}
+
+	if id == "+" {
+		return len(entries) - 1, true
+	}
+	
 	for i := range entries {
 		if entries[i].ID == id {
 			return i, true
