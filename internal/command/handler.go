@@ -2,6 +2,7 @@ package command
 
 import (
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/codecrafters-io/redis-starter-go/internal/resp"
@@ -17,7 +18,7 @@ func NewHandler(store *store.Store) *Handler {
 }
 
 func (h *Handler) Handle(args []string) string {
-	switch args[0] {
+	switch strings.ToLower(args[0]) {
 	case "ping":
 		return resp.SimpleString("PONG")
 	case "echo":
@@ -54,13 +55,13 @@ func (h *Handler) Handle(args []string) string {
 func (h *Handler) set(args []string) string {
 	var expireTime int64 = -1
 
-	if len(args) > 3 && args[3] == "ex" {
+	if len(args) > 3 && strings.ToLower(args[3]) == "ex" {
 		expireTime, _ = strconv.ParseInt(args[4], 10, 64)
 		expireTime *= 1000
 		nowMs := time.Now().UnixMilli()
 		expireTime = expireTime + nowMs
 	}
-	if len(args) > 4 && args[3] == "px" {
+	if len(args) > 4 && strings.ToLower(args[3]) == "px" {
 		expireTime, _ = strconv.ParseInt(args[4], 10, 64)
 		nowMs := time.Now().UnixMilli()
 		expireTime = expireTime + nowMs
@@ -210,7 +211,7 @@ func (h *Handler) xrange(args []string) string {
 }
 
 func (h *Handler) xread(args []string) string {
-	if len(args) > 3 && args[1] == "block" {
+	if len(args) > 3 && strings.ToLower(args[1]) == "block" {
 		timeoutMs, _ := strconv.Atoi(args[2])
 		streamCount := (len(args) - 4) / 2
 		streams := args[4 : 4+streamCount]

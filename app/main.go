@@ -2,11 +2,11 @@ package main
 
 import (
 	"fmt"
-	"net"
-	"os"
 	"github.com/codecrafters-io/redis-starter-go/internal/command"
 	"github.com/codecrafters-io/redis-starter-go/internal/server"
 	"github.com/codecrafters-io/redis-starter-go/internal/store"
+	"net"
+	"os"
 )
 
 func main() {

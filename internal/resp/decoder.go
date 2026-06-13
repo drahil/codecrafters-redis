@@ -37,7 +37,7 @@ func parseMessage(message string) []string {
 		if i >= len(lines) {
 			break
 		}
-		args = append(args, strings.ToLower(lines[i]))
+		args = append(args, lines[i])
 		i++
 	}
 

@@ -2,10 +2,10 @@ package server
 
 import (
 	"fmt"
-	"net"
-	"os"
 	"github.com/codecrafters-io/redis-starter-go/internal/command"
 	"github.com/codecrafters-io/redis-starter-go/internal/resp"
+	"net"
+	"os"
 )
 
 func Serve(l net.Listener, handler *command.Handler) {
