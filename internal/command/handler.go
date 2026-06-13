@@ -1,6 +1,7 @@
 package command
 
 import (
+	"fmt"
 	"strconv"
 	"strings"
 	"time"
@@ -73,23 +74,13 @@ func (h *Handler) set(args []string) string {
 }
 
 func (h *Handler) get(key string) string {
-	entry, _ := h.store.Get(key)
+	value, ok := h.store.Get(key)
 
-	if entry.Value == "" {
+	if !ok {
 		return resp.NullBulkString()
 	}
 
-	if entry.ExpireTime == -1 {
-		return resp.BulkString(entry.Value)
-	}
-
-	nowMs := time.Now().UnixMilli()
-
-	if nowMs <= entry.ExpireTime {
-		return resp.BulkString(entry.Value)
-	}
-
-	return resp.NullBulkString()
+	return resp.BulkString(value)
 }
 
 func (h *Handler) rpush(args []string) string {
@@ -207,7 +198,7 @@ func (h *Handler) xrange(args []string) string {
 	startId := args[2]
 	endId := args[3]
 
-	return h.store.Xrange(stream, startId, endId)
+	return encodeStreamEntries(h.store.Xrange(stream, startId, endId))
 }
 
 func (h *Handler) xread(args []string) string {
@@ -217,12 +208,47 @@ func (h *Handler) xread(args []string) string {
 		streams := args[4 : 4+streamCount]
 		startIds := args[4+streamCount:]
 
-		return h.store.XreadBlock(streams, startIds, timeoutMs)
+		return encodeStreamResults(h.store.XreadBlock(streams, startIds, timeoutMs))
 	}
 
 	streamCount := (len(args) - 2) / 2
 	streams := args[2 : 2+streamCount]
 	startIds := args[2+streamCount:]
 
-	return h.store.Xread(streams, startIds)
+	return encodeStreamResults(h.store.Xread(streams, startIds))
+}
+
+func encodeStreamResults(results []store.StreamResult) string {
+	if len(results) == 0 {
+		return resp.NullArray()
+	}
+
+	var builder strings.Builder
+	builder.WriteString(fmt.Sprintf("*%d\r\n", len(results)))
+
+	for _, result := range results {
+		builder.WriteString("*2\r\n")
+		builder.WriteString(resp.BulkString(result.Name))
+		builder.WriteString(encodeStreamEntries(result.Entries))
+	}
+
+	return builder.String()
+}
+
+func encodeStreamEntries(entries []store.StreamEntry) string {
+	var builder strings.Builder
+	builder.WriteString(fmt.Sprintf("*%d\r\n", len(entries)))
+
+	for _, entry := range entries {
+		builder.WriteString("*2\r\n")
+		builder.WriteString(resp.BulkString(entry.ID))
+		builder.WriteString(fmt.Sprintf("*%d\r\n", len(entry.Fields)*2))
+
+		for key, value := range entry.Fields {
+			builder.WriteString(resp.BulkString(key))
+			builder.WriteString(resp.BulkString(value))
+		}
+	}
+
+	return builder.String()
 }

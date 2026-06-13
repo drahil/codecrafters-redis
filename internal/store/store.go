@@ -6,10 +6,7 @@ import (
 	"math"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
-
-	"github.com/codecrafters-io/redis-starter-go/internal/resp"
 )
 
 type Entry struct {
@@ -23,7 +20,6 @@ type Store struct {
 	BlockedClients map[string][]chan []string
 	Streams        map[string][]StreamEntry
 	XreadWaiters   map[string][]chan struct{}
-	streamMu       sync.Mutex
 }
 
 type BlockedClient struct {
@@ -33,6 +29,11 @@ type BlockedClient struct {
 type StreamEntry struct {
 	ID     string
 	Fields map[string]string
+}
+
+type StreamResult struct {
+	Name    string
+	Entries []StreamEntry
 }
 
 func New() *Store {
@@ -66,9 +67,17 @@ func (s *Store) Set(key, value string, expireTime int64) {
 	}
 }
 
-func (s *Store) Get(key string) (Entry, bool) {
+func (s *Store) Get(key string) (string, bool) {
 	entry, ok := s.Strings[key]
-	return entry, ok
+	if !ok {
+		return "", false
+	}
+
+	if entry.ExpireTime != -1 && time.Now().UnixMilli() > entry.ExpireTime {
+		return "", false
+	}
+
+	return entry.Value, true
 }
 
 func (s *Store) RPush(key string, values ...string) int {
@@ -173,7 +182,6 @@ func (s *Store) Type(key string) string {
 }
 
 func (s *Store) NewStream(streamName, id, key, value string) string {
-	s.streamMu.Lock()
 	s.Streams[streamName] = append(s.Streams[streamName], StreamEntry{
 		ID: id,
 		Fields: map[string]string{
@@ -183,7 +191,6 @@ func (s *Store) NewStream(streamName, id, key, value string) string {
 
 	waiters := s.XreadWaiters[streamName]
 	delete(s.XreadWaiters, streamName)
-	s.streamMu.Unlock()
 
 	for _, waiter := range waiters {
 		select {
@@ -196,8 +203,6 @@ func (s *Store) NewStream(streamName, id, key, value string) string {
 }
 
 func (s *Store) ValidateIdForStream(streamName, id string) (string, error) {
-	s.streamMu.Lock()
-	defer s.streamMu.Unlock()
 
 	if id == "0-0" {
 		err := errors.New("The ID specified in XADD must be greater than 0-0")
@@ -270,30 +275,18 @@ func parseStreamID(id string) (string, string) {
 	return milliseconds, sequenceNumber
 }
 
-func (s *Store) Xrange(stream, startId, endId string) string {
-	s.streamMu.Lock()
-	defer s.streamMu.Unlock()
-
-	startIndex, _ := findStreamEntry(s.Streams[stream], startId)
-	endIndex, _ := findStreamEntry(s.Streams[stream], endId)
-
-	entries := s.Streams[stream][startIndex : endIndex+1]
-	var builder strings.Builder
-
-	builder.WriteString(fmt.Sprintf("*%d\r\n", len(entries)))
-
-	for _, entry := range entries {
-		builder.WriteString("*2\r\n")
-		builder.WriteString(resp.BulkString(entry.ID))
-		builder.WriteString(fmt.Sprintf("*%d\r\n", len(entry.Fields)*2))
-
-		for key, value := range entry.Fields {
-			builder.WriteString(resp.BulkString(key))
-			builder.WriteString(resp.BulkString(value))
-		}
+func (s *Store) Xrange(stream, startId, endId string) []StreamEntry {
+	startIndex, ok := findStreamEntry(s.Streams[stream], startId)
+	if !ok {
+		return []StreamEntry{}
 	}
 
-	return builder.String()
+	endIndex, ok := findStreamEntry(s.Streams[stream], endId)
+	if !ok {
+		return []StreamEntry{}
+	}
+
+	return s.Streams[stream][startIndex : endIndex+1]
 }
 
 func findStreamEntry(entries []StreamEntry, id string) (int, bool) {
@@ -314,23 +307,17 @@ func findStreamEntry(entries []StreamEntry, id string) (int, bool) {
 	return -1, false
 }
 
-func (s *Store) Xread(streams, startIds []string) string {
-	s.streamMu.Lock()
-	defer s.streamMu.Unlock()
-
+func (s *Store) Xread(streams, startIds []string) []StreamResult {
 	return s.xreadLocked(streams, startIds)
 }
 
-func (s *Store) XreadBlock(streams, startIds []string, timeoutMs int) string {
+func (s *Store) XreadBlock(streams, startIds []string, timeoutMs int) []StreamResult {
 	waiter := make(chan struct{}, 1)
 
-	s.streamMu.Lock()
-	if response := s.xreadLocked(streams, startIds); response != resp.NullArray() {
-		s.streamMu.Unlock()
-		return response
+	if results := s.xreadLocked(streams, startIds); len(results) > 0 {
+		return results
 	}
-	s.addXreadWaiterLocked(streams, waiter)
-	s.streamMu.Unlock()
+	s.addXreadWaiter(streams, waiter)
 
 	var timeout <-chan time.Time
 	var timer *time.Timer
@@ -343,33 +330,28 @@ func (s *Store) XreadBlock(streams, startIds []string, timeoutMs int) string {
 	for {
 		select {
 		case <-waiter:
-			s.streamMu.Lock()
-			response := s.xreadLocked(streams, startIds)
-			if response != resp.NullArray() {
-				s.removeXreadWaiterLocked(streams, waiter)
-				s.streamMu.Unlock()
-				return response
+			results := s.xreadLocked(streams, startIds)
+			if len(results) > 0 {
+				s.removeXreadWaiter(streams, waiter)
+				return results
 			}
 
-			s.removeXreadWaiterLocked(streams, waiter)
-			s.addXreadWaiterLocked(streams, waiter)
-			s.streamMu.Unlock()
+			s.removeXreadWaiter(streams, waiter)
+			s.addXreadWaiter(streams, waiter)
 		case <-timeout:
-			s.streamMu.Lock()
-			s.removeXreadWaiterLocked(streams, waiter)
-			s.streamMu.Unlock()
-			return resp.NullArray()
+			s.removeXreadWaiter(streams, waiter)
+			return nil
 		}
 	}
 }
 
-func (s *Store) addXreadWaiterLocked(streams []string, waiter chan struct{}) {
+func (s *Store) addXreadWaiter(streams []string, waiter chan struct{}) {
 	for _, stream := range streams {
 		s.XreadWaiters[stream] = append(s.XreadWaiters[stream], waiter)
 	}
 }
 
-func (s *Store) removeXreadWaiterLocked(streams []string, waiter chan struct{}) {
+func (s *Store) removeXreadWaiter(streams []string, waiter chan struct{}) {
 	for _, stream := range streams {
 		waiters := s.XreadWaiters[stream]
 		for i, existing := range waiters {
@@ -385,57 +367,30 @@ func (s *Store) removeXreadWaiterLocked(streams []string, waiter chan struct{}) 
 	}
 }
 
-func (s *Store) xreadLocked(streams, startIds []string) string {
-	var streamResponses []string
+func (s *Store) xreadLocked(streams, startIds []string) []StreamResult {
+	var results []StreamResult
 
 	for i, stream := range streams {
-		response := s.xreadFromOneStream(stream, startIds[i])
-		if response != "" {
-			streamResponses = append(streamResponses, response)
+		result, ok := s.xreadFromOneStream(stream, startIds[i])
+		if ok {
+			results = append(results, result)
 		}
 	}
 
-	if len(streamResponses) == 0 {
-		return resp.NullArray()
-	}
-
-	var builder strings.Builder
-	builder.WriteString(fmt.Sprintf("*%d\r\n", len(streamResponses)))
-
-	for _, response := range streamResponses {
-		builder.WriteString(response)
-	}
-
-	return builder.String()
+	return results
 }
 
-func (s *Store) xreadFromOneStream(stream, startId string) string {
+func (s *Store) xreadFromOneStream(stream, startId string) (StreamResult, bool) {
 	streamEntries := s.Streams[stream]
 	startIndex, ok := findFirstStreamEntryAfter(streamEntries, startId)
-
 	if !ok {
-		return ""
+		return StreamResult{}, false
 	}
 
-	entries := streamEntries[startIndex:]
-	var builder strings.Builder
-
-	builder.WriteString("*2\r\n")
-	builder.WriteString(resp.BulkString(stream))
-	builder.WriteString(fmt.Sprintf("*%d\r\n", len(entries)))
-
-	for _, entry := range entries {
-		builder.WriteString("*2\r\n")
-		builder.WriteString(resp.BulkString(entry.ID))
-		builder.WriteString(fmt.Sprintf("*%d\r\n", len(entry.Fields)*2))
-
-		for key, value := range entry.Fields {
-			builder.WriteString(resp.BulkString(key))
-			builder.WriteString(resp.BulkString(value))
-		}
-	}
-
-	return builder.String()
+	return StreamResult{
+		Name:    stream,
+		Entries: streamEntries[startIndex:],
+	}, true
 }
 
 func findFirstStreamEntryAfter(entries []StreamEntry, id string) (int, bool) {
