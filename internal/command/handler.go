@@ -210,6 +210,15 @@ func (h *Handler) xrange(args []string) string {
 }
 
 func (h *Handler) xread(args []string) string {
+	if len(args) > 3 && args[1] == "block" {
+		timeoutMs, _ := strconv.Atoi(args[2])
+		streamCount := (len(args) - 4) / 2
+		streams := args[4 : 4+streamCount]
+		startIds := args[4+streamCount:]
+
+		return h.store.XreadBlock(streams, startIds, timeoutMs)
+	}
+
 	streamCount := (len(args) - 2) / 2
 	streams := args[2 : 2+streamCount]
 	startIds := args[2+streamCount:]
