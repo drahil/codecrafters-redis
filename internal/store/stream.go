@@ -144,13 +144,14 @@ func findStreamEntry(entries []StreamEntry, id string) (int, bool) {
 }
 
 func (s *Store) Xread(streams, startIds []string) []StreamResult {
-	return s.xreadLocked(streams, startIds)
+	return s.xreadLocked(streams, s.resolveXreadStartIds(streams, startIds))
 }
 
 func (s *Store) XreadBlock(streams, startIds []string, timeoutMs int) []StreamResult {
 	waiter := make(chan struct{}, 1)
+	resolvedStartIds := s.resolveXreadStartIds(streams, startIds)
 
-	if results := s.xreadLocked(streams, startIds); len(results) > 0 {
+	if results := s.xreadLocked(streams, resolvedStartIds); len(results) > 0 {
 		return results
 	}
 	s.addXreadWaiter(streams, waiter)
@@ -166,7 +167,7 @@ func (s *Store) XreadBlock(streams, startIds []string, timeoutMs int) []StreamRe
 	for {
 		select {
 		case <-waiter:
-			results := s.xreadLocked(streams, startIds)
+			results := s.xreadLocked(streams, resolvedStartIds)
 			if len(results) > 0 {
 				s.removeXreadWaiter(streams, waiter)
 				return results
@@ -201,6 +202,27 @@ func (s *Store) removeXreadWaiter(streams []string, waiter chan struct{}) {
 			delete(s.XreadWaiters, stream)
 		}
 	}
+}
+
+func (s *Store) resolveXreadStartIds(streams, startIds []string) []string {
+	resolved := make([]string, len(startIds))
+	copy(resolved, startIds)
+
+	for i, startId := range resolved {
+		if startId != "$" {
+			continue
+		}
+
+		entries := s.Streams[streams[i]]
+		if len(entries) == 0 {
+			resolved[i] = "0-0"
+			continue
+		}
+
+		resolved[i] = entries[len(entries)-1].ID
+	}
+
+	return resolved
 }
 
 func (s *Store) xreadLocked(streams, startIds []string) []StreamResult {
