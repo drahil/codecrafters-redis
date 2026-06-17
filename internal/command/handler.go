@@ -45,6 +45,8 @@ func (h *Handler) Handle(args []string) string {
 		return h.xrange(args)
 	case "xread":
 		return h.xread(args)
+	case "incr":
+		return h.incr(args)
 	}
 
 	return resp.SimpleString("OK")
