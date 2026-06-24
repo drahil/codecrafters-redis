@@ -1,22 +1,19 @@
 package command
 
-import "strconv"
+import (
+	"strconv"
+	"github.com/codecrafters-io/redis-starter-go/internal/resp"
+)
 
 func (h *Handler) incr(args []string) int {
 	key := args[1]
-	value, ok := h.store.Get(key)
+	oldValue, ok := h.store.Get(key)
 
 	if !ok {
-		h.store.Set(key, "1", -1)
-
-		return 1
+		oldValue = "0"
 	}
-
-	oldValueInt, _ := strconv.Atoi(value)
-
-	newValue := oldValueInt + 1
-
-	h.store.Set(args[1], strconv.Itoa(newValue), -1)
-
-	return newValue
+	
+	value := h.store.Incr(key, oldValue)
+	
+	return resp.Integer(value)
 }
