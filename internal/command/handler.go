@@ -47,6 +47,8 @@ func (h *Handler) Handle(args []string) string {
 		return h.xread(args)
 	case "incr":
 		return h.incr(args)
+	case "multi":
+		return resp.SimpleString("OK") // will be updated in later stages
 	}
 
 	return resp.SimpleString("OK")
