@@ -33,6 +33,17 @@ func Array(values []string) string {
 	return builder.String()
 }
 
+func RawArray(values []string) string {
+	var builder strings.Builder
+	builder.WriteString(fmt.Sprintf("*%d\r\n", len(values)))
+
+	for _, value := range values {
+		builder.WriteString(value)
+	}
+
+	return builder.String()
+}
+
 func NullBulkString() string {
 	return "$-1\r\n"
 }

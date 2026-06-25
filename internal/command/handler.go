@@ -16,7 +16,13 @@ func NewHandler(store *store.Store) *Handler {
 }
 
 func (h *Handler) Handle(args []string) string {
-	switch strings.ToLower(args[0]) {
+	command := strings.ToLower(args[0])
+
+	if h.CheckIfQueueIsActive(command, args) {
+		return resp.SimpleString("QUEUED")
+	}
+
+	switch command {
 	case "ping":
 		return resp.SimpleString("PONG")
 	case "echo":
@@ -48,8 +54,20 @@ func (h *Handler) Handle(args []string) string {
 	case "incr":
 		return h.incr(args)
 	case "multi":
-		return resp.SimpleString("OK") // will be updated in later stages
+		return h.multi(args)
+	case "exec":
+		return h.exec(args)
 	}
 
 	return resp.SimpleString("OK")
+}
+
+func (h *Handler) CheckIfQueueIsActive(command string, args []string) bool {
+	if h.store.MultiInitialized && command != "exec" && command != "multi" {
+		h.store.QueuedCommands = append(h.store.QueuedCommands, args)
+
+		return true
+	}
+
+	return false
 }

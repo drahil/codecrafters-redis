@@ -1,22 +1,25 @@
 package store
 
 type Store struct {
-	Strings        map[string]Entry
-	Lists          map[string][]string
-	BlockedClients map[string][]chan []string
-	Streams        map[string][]StreamEntry
-	XreadWaiters   map[string][]chan struct{}
+	Strings          map[string]Entry
+	Lists            map[string][]string
+	BlockedClients   map[string][]chan []string
+	Streams          map[string][]StreamEntry
+	XreadWaiters     map[string][]chan struct{}
+	MultiInitialized bool
+	QueuedCommands   [][]string
 }
 
 func New() *Store {
 	return &Store{
-		Strings:        make(map[string]Entry),
-		Lists:          make(map[string][]string),
-		BlockedClients: make(map[string][]chan []string),
-		Streams:        make(map[string][]StreamEntry),
-		XreadWaiters:   make(map[string][]chan struct{}),
+		Strings:          make(map[string]Entry),
+		Lists:            make(map[string][]string),
+		BlockedClients:   make(map[string][]chan []string),
+		Streams:          make(map[string][]StreamEntry),
+		XreadWaiters:     make(map[string][]chan struct{}),
+		MultiInitialized: false,
+		QueuedCommands:   nil,
 	}
-
 }
 
 func (s *Store) Type(key string) string {
