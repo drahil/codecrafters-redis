@@ -6,8 +6,6 @@ type Store struct {
 	BlockedClients   map[string][]chan []string
 	Streams          map[string][]StreamEntry
 	XreadWaiters     map[string][]chan struct{}
-	MultiInitialized bool
-	QueuedCommands   [][]string
 }
 
 func New() *Store {
@@ -17,8 +15,6 @@ func New() *Store {
 		BlockedClients:   make(map[string][]chan []string),
 		Streams:          make(map[string][]StreamEntry),
 		XreadWaiters:     make(map[string][]chan struct{}),
-		MultiInitialized: false,
-		QueuedCommands:   nil,
 	}
 }
 

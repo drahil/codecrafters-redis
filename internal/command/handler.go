@@ -15,10 +15,10 @@ func NewHandler(store *store.Store) *Handler {
 	return &Handler{store: store}
 }
 
-func (h *Handler) Handle(args []string) string {
+func (h *Handler) Handle(args []string, client *ClientState) string {
 	command := strings.ToLower(args[0])
 
-	if h.CheckIfQueueIsActive(command, args) {
+	if h.CheckIfQueueIsActive(client, command, args) {
 		return resp.SimpleString("QUEUED")
 	}
 
@@ -54,17 +54,17 @@ func (h *Handler) Handle(args []string) string {
 	case "incr":
 		return h.incr(args)
 	case "multi":
-		return h.multi(args)
+		return h.multi(client, args)
 	case "exec":
-		return h.exec(args)
+		return h.exec(client, args)
 	}
 
 	return resp.SimpleString("OK")
 }
 
-func (h *Handler) CheckIfQueueIsActive(command string, args []string) bool {
-	if h.store.MultiInitialized && command != "exec" && command != "multi" {
-		h.store.QueuedCommands = append(h.store.QueuedCommands, args)
+func (h *Handler) CheckIfQueueIsActive(client *ClientState, command string, args []string) bool {
+	if client.InMulti && command != "exec" && command != "multi" {
+		client.Queue = append(client.Queue, args)
 
 		return true
 	}

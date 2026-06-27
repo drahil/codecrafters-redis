@@ -2,24 +2,24 @@ package command
 
 import "github.com/codecrafters-io/redis-starter-go/internal/resp"
 
-func (h *Handler) multi(args []string) string {
-	h.store.InitializeMulti()
+func (h *Handler) multi(client *ClientState, args []string) string {
+	client.InitializeMulti()
 
 	return resp.SimpleString("OK")
 }
 
-func (h *Handler) exec(args []string) string {
-	if !h.store.MultiInitialized {
+func (h *Handler) exec(client *ClientState, args []string) string {
+	if !client.InMulti {
 		return resp.SimpleError("EXEC without MULTI")
 	}
 
-	queuedCommands := h.store.QueuedCommands
-	h.store.MultiInitialized = false
-	h.store.QueuedCommands = nil
+	queuedCommands := client.Queue
+	client.InMulti = false
+	client.Queue = nil
 
 	results := make([]string, 0, len(queuedCommands))
 	for _, queuedCommand := range queuedCommands {
-		result := h.Handle(queuedCommand)
+		result := h.Handle(queuedCommand, client)
 		results = append(results, result)
 	}
 

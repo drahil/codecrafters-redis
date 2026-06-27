@@ -22,6 +22,8 @@ func Serve(l net.Listener, handler *command.Handler) {
 func handleConnection(conn net.Conn, handler *command.Handler) {
 	defer conn.Close()
 
+	client := &command.ClientState{}
+
 	for {
 		args, err := resp.GetArgs(conn)
 
@@ -33,7 +35,7 @@ func handleConnection(conn net.Conn, handler *command.Handler) {
 			continue
 		}
 
-		response := handler.Handle(args)
+		response := handler.Handle(args, client)
 		conn.Write([]byte(response))
 	}
 }
