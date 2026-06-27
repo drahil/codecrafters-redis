@@ -65,7 +65,7 @@ func (h *Handler) Handle(args []string, client *ClientState) string {
 }
 
 func (h *Handler) CheckIfQueueIsActive(client *ClientState, command string, args []string) bool {
-	if client.InMulti && command != "exec" && command != "multi" {
+	if client.InMulti && command != "exec" && command != "multi" && command != "discard" {
 		client.Queue = append(client.Queue, args)
 
 		return true
