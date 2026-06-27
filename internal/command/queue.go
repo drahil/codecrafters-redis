@@ -25,3 +25,14 @@ func (h *Handler) exec(client *ClientState, args []string) string {
 
 	return resp.RawArray(results)
 }
+
+func (h *Handler) discard(client *ClientState, args []string) string {
+	if !client.InMulti {
+		return resp.SimpleError("DISCARD without MULTI")
+	}
+
+	client.InMulti = false
+	client.Queue = nil
+
+	return resp.SimpleString("OK")
+}
