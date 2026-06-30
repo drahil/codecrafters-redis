@@ -1,6 +1,7 @@
 package command
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/codecrafters-io/redis-starter-go/internal/resp"
@@ -58,7 +59,10 @@ func (h *Handler) Handle(args []string, client *ClientState) string {
 	case "exec":
 		return h.exec(client, args)
 	case "discard":
-		return h.discard(client, args)		
+		return h.discard(client, args)
+	case "--port":
+		fmt.Println("Test!")
+
 	}
 
 	return resp.SimpleString("OK")
