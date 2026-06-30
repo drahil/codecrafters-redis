@@ -61,7 +61,7 @@ func (h *Handler) Handle(args []string, client *ClientState) string {
 	case "discard":
 		return h.discard(client, args)
 	case "info":
-		fmt.Println("Test!")
+		return h.info(client, args)
 
 	}
 
