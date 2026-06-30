@@ -17,6 +17,9 @@ func main() {
 
 	port := flag.Int("port", 6379, "TCP port to listen on")
 	flag.Parse()
+
+	
+	
 	addr := fmt.Sprintf("0.0.0.0:%d", *port)
 	// Uncomment the code below to pass the first stage
 	//
