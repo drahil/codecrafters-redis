@@ -15,13 +15,13 @@ import (
 func main() {
 	// You can use print statements as follows for debugging, they'll be visible when running tests.
 	fmt.Println("Logs from your program will appear here!")
-	
-	addr := fmt.Sprintf("0.0.0.0:%d", *configs.Port)
+
 	flag.Parse()
+	addr := fmt.Sprintf("0.0.0.0:%d", *configs.Port)
 
 	l, err := net.Listen("tcp", addr)
 	if err != nil {
-		fmt.Println("Failed to bind to port 6379")
+		fmt.Printf("Failed to bind to %s\n", addr)
 		os.Exit(1)
 	}
 
