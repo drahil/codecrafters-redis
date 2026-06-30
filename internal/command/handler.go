@@ -58,7 +58,7 @@ func (h *Handler) Handle(args []string, client *ClientState) string {
 	case "exec":
 		return h.exec(client, args)
 	case "discard":
-		return h.discard(client, args)
+		return h.discard(client, args)		
 	}
 
 	return resp.SimpleString("OK")
