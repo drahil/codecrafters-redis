@@ -60,7 +60,7 @@ func (h *Handler) Handle(args []string, client *ClientState) string {
 		return h.exec(client, args)
 	case "discard":
 		return h.discard(client, args)
-	case "--port":
+	case "info":
 		fmt.Println("Test!")
 
 	}
