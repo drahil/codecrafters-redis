@@ -3,9 +3,4 @@ package configs
 import "flag"
 
 var ReplicaOf = flag.String("replicaof", "", "Master server address")
-
-var Config = map[string]string{}
-
-func Init() {
-	
-}
+var Port = flag.Int("port", 6379, "TCP port to listen on")
