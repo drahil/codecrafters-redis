@@ -1,7 +1,6 @@
 package command
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/codecrafters-io/redis-starter-go/internal/resp"
