@@ -24,6 +24,8 @@ func main() {
 		os.Exit(1)
 	}
 
+	fmt.Println(configs.MasterHost)
+
 	if configs.MasterHost != "" {
 		masterAddr := fmt.Sprintf("%s:%d", configs.MasterHost, configs.MasterPort)
 		conn, err := net.Dial("tcp", masterAddr)
