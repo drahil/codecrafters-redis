@@ -65,6 +65,8 @@ func (h *Handler) Handle(args []string, client *ClientState) string {
 		return h.discard(client, args)
 	case "info":
 		return h.info(client, args)
+	case "replconf":
+		return h.replconf(client, args)
 	case "psync":
 		return h.psync(client, args)
 
