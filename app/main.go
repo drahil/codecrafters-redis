@@ -16,9 +16,9 @@ func main() {
 	fmt.Println("Logs from your program will appear here!")
 
 	flag.Parse()
-	configs.Init()
+	cfg := configs.Init()
 
-	addr := fmt.Sprintf("0.0.0.0:%d", *configs.Port)
+	addr := fmt.Sprintf("0.0.0.0:%d", cfg.Port)
 
 	l, err := net.Listen("tcp", addr)
 	if err != nil {
@@ -26,8 +26,8 @@ func main() {
 		os.Exit(1)
 	}
 
-	if configs.MasterHost != "" {
-		masterAddr := fmt.Sprintf("%s:%d", configs.MasterHost, configs.MasterPort)
+	if cfg.MasterHost != "" {
+		masterAddr := fmt.Sprintf("%s:%d", cfg.MasterHost, cfg.MasterPort)
 		conn, err := net.Dial("tcp", masterAddr)
 		if err != nil {
 			os.Exit(1)
@@ -36,8 +36,14 @@ func main() {
 		_, err = conn.Write([]byte("*1\r\n$4\r\nPING\r\n"))
 	}
 
+	role := "master"
+
+	if cfg.ReplicaOf != "" {
+		role = "replication"
+	}
+
 	store := store.New()
-	handler := command.NewHandler(store)
+	handler := command.NewHandler(store, role)
 
 	server.Serve(l, handler)
 }

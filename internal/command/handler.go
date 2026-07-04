@@ -9,10 +9,14 @@ import (
 
 type Handler struct {
 	store *store.Store
+	role string
 }
 
-func NewHandler(store *store.Store) *Handler {
-	return &Handler{store: store}
+func NewHandler(store *store.Store, role string) *Handler {
+	return &Handler{
+		store: store,
+		role: role,
+	}
 }
 
 func (h *Handler) Handle(args []string, client *ClientState) string {
