@@ -16,15 +16,15 @@ func main() {
 	fmt.Println("Logs from your program will appear here!")
 
 	flag.Parse()
+	configs.Init()
+
 	addr := fmt.Sprintf("0.0.0.0:%d", *configs.Port)
-	fmt.Println(configs.MasterHost)
 
 	l, err := net.Listen("tcp", addr)
 	if err != nil {
 		fmt.Printf("Failed to bind to %s\n", addr)
 		os.Exit(1)
 	}
-
 
 	if configs.MasterHost != "" {
 		masterAddr := fmt.Sprintf("%s:%d", configs.MasterHost, configs.MasterPort)
