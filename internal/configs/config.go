@@ -14,8 +14,10 @@ type Configs struct {
 }
 
 func Init() Configs {
-	port := *flag.Int("port", 6379, "TCP port to listen on")
+	port := flag.Int("port", 6379, "TCP port to listen on")
 	replicaOf := flag.String("replicaof", "", "Master server address")
+
+	flag.Parse()
 
 	masterHost := ""
 	masterPort := -1
@@ -35,7 +37,7 @@ func Init() Configs {
 	}
 
 	return Configs{
-		Port:       port,
+		Port:       *port,
 		ReplicaOf:  *replicaOf,
 		MasterHost: masterHost,
 		MasterPort: masterPort,

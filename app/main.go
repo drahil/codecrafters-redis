@@ -1,7 +1,6 @@
 package main
 
 import (
-	"flag"
 	"fmt"
 	"net"
 	"os"
@@ -15,7 +14,6 @@ import (
 func main() {
 	fmt.Println("Logs from your program will appear here!")
 
-	flag.Parse()
 	cfg := configs.Init()
 
 	addr := fmt.Sprintf("0.0.0.0:%d", cfg.Port)
@@ -39,7 +37,7 @@ func main() {
 	role := "master"
 
 	if cfg.ReplicaOf != "" {
-		role = "replication"
+		role = "replica"
 	}
 
 	store := store.New()
