@@ -9,13 +9,13 @@ import (
 
 type Handler struct {
 	store *store.Store
-	role string
+	role  string
 }
 
 func NewHandler(store *store.Store, role string) *Handler {
 	return &Handler{
 		store: store,
-		role: role,
+		role:  role,
 	}
 }
 

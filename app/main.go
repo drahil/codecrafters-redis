@@ -7,6 +7,7 @@ import (
 
 	"github.com/codecrafters-io/redis-starter-go/internal/command"
 	"github.com/codecrafters-io/redis-starter-go/internal/configs"
+	"github.com/codecrafters-io/redis-starter-go/internal/replication"
 	"github.com/codecrafters-io/redis-starter-go/internal/server"
 	"github.com/codecrafters-io/redis-starter-go/internal/store"
 )
@@ -25,13 +26,9 @@ func main() {
 	}
 
 	if cfg.MasterHost != "" {
-		masterAddr := fmt.Sprintf("%s:%d", cfg.MasterHost, cfg.MasterPort)
-		conn, err := net.Dial("tcp", masterAddr)
-		if err != nil {
+		if err := replication.StartReplica(cfg.MasterHost, cfg.MasterPort); err != nil {
 			os.Exit(1)
 		}
-
-		_, err = conn.Write([]byte("*1\r\n$4\r\nPING\r\n"))
 	}
 
 	role := "master"
