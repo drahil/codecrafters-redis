@@ -13,7 +13,6 @@ import (
 )
 
 func main() {
-	// You can use print statements as follows for debugging, they'll be visible when running tests.
 	fmt.Println("Logs from your program will appear here!")
 
 	flag.Parse()
@@ -23,6 +22,16 @@ func main() {
 	if err != nil {
 		fmt.Printf("Failed to bind to %s\n", addr)
 		os.Exit(1)
+	}
+
+	if configs.MasterHost != "" {
+		masterAddr := fmt.Sprintf("%s:%d", configs.MasterHost, configs.MasterPort)
+		conn, err := net.Dial("tcp", masterAddr)
+		if err != nil {
+			os.Exit(1)
+		}
+
+		_, err = conn.Write([]byte("*1\r\n$4\r\nPING\r\n"))
 	}
 
 	store := store.New()
