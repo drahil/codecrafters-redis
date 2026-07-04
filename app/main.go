@@ -26,13 +26,12 @@ func main() {
 	}
 
 	if cfg.MasterHost != "" {
-		if err := replication.StartReplica(cfg.MasterHost, cfg.MasterPort); err != nil {
+		if err := replication.StartReplica(cfg); err != nil {
 			os.Exit(1)
 		}
 	}
 
 	role := "master"
-
 	if cfg.ReplicaOf != "" {
 		role = "replica"
 	}
