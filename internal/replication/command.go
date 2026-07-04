@@ -35,6 +35,12 @@ func StartReplica(cfg configs.Configs) error {
 		return err
 	}
 
+	err = sendCommand(conn, []string{"PSYNC", "?", "-1"})
+
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
