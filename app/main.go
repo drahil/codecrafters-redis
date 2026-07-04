@@ -17,6 +17,7 @@ func main() {
 
 	flag.Parse()
 	addr := fmt.Sprintf("0.0.0.0:%d", *configs.Port)
+	fmt.Println(configs.MasterHost)
 
 	l, err := net.Listen("tcp", addr)
 	if err != nil {
@@ -24,7 +25,6 @@ func main() {
 		os.Exit(1)
 	}
 
-	fmt.Println(configs.MasterHost)
 
 	if configs.MasterHost != "" {
 		masterAddr := fmt.Sprintf("%s:%d", configs.MasterHost, configs.MasterPort)
