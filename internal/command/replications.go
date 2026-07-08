@@ -3,6 +3,7 @@ package command
 import (
 	"encoding/hex"
 	"fmt"
+	"net"
 
 	"github.com/codecrafters-io/redis-starter-go/internal/resp"
 )
@@ -28,7 +29,10 @@ func (h *Handler) replconf(client *ClientState, args []string) string {
 	return resp.SimpleString("OK")
 }
 
-func (h *Handler) psync(client *ClientState, args []string) string {
+func (h *Handler) psync(client *ClientState, conn net.Conn, args []string) string {
+	client.IsReplica = true
+	h.replicationManager.AddReplica(conn)
+
 	fullResync := resp.SimpleString("FULLRESYNC " + masterReplID + " 0")
 	rdbFile := fmt.Sprintf("$%d\r\n%s", len(emptyRDB), string(emptyRDB))
 

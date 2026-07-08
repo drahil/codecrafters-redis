@@ -1,8 +1,9 @@
 package command
 
 type ClientState struct {
-	InMulti bool
-	Queue   [][]string
+	InMulti   bool
+	IsReplica bool
+	Queue     [][]string
 }
 
 func (client *ClientState) InitializeMulti() {

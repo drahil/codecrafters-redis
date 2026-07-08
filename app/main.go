@@ -37,7 +37,9 @@ func main() {
 	}
 
 	store := store.New()
-	handler := command.NewHandler(store, role)
+	replicationManager := replication.NewManager()
+
+	handler := command.NewHandler(store, role, replicationManager)
 
 	server.Serve(l, handler)
 }

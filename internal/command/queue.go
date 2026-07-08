@@ -19,7 +19,7 @@ func (h *Handler) exec(client *ClientState, args []string) string {
 
 	results := make([]string, 0, len(queuedCommands))
 	for _, queuedCommand := range queuedCommands {
-		result := h.Handle(queuedCommand, client)
+		result := h.Handle(queuedCommand, client, nil)
 		results = append(results, result)
 	}
 

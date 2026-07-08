@@ -35,7 +35,7 @@ func handleConnection(conn net.Conn, handler *command.Handler) {
 			continue
 		}
 
-		response := handler.Handle(args, client)
+		response := handler.Handle(args, client, conn)
 		conn.Write([]byte(response))
 	}
 }

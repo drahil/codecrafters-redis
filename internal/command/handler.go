@@ -1,25 +1,29 @@
 package command
 
 import (
+	"net"
 	"strings"
 
+	"github.com/codecrafters-io/redis-starter-go/internal/replication"
 	"github.com/codecrafters-io/redis-starter-go/internal/resp"
 	"github.com/codecrafters-io/redis-starter-go/internal/store"
 )
 
 type Handler struct {
-	store *store.Store
-	role  string
+	store              *store.Store
+	role               string
+	replicationManager *replication.Manager
 }
 
-func NewHandler(store *store.Store, role string) *Handler {
+func NewHandler(store *store.Store, role string, replicationManager *replication.Manager) *Handler {
 	return &Handler{
-		store: store,
-		role:  role,
+		store:              store,
+		role:               role,
+		replicationManager: replicationManager,
 	}
 }
 
-func (h *Handler) Handle(args []string, client *ClientState) string {
+func (h *Handler) Handle(args []string, client *ClientState, conn net.Conn) string {
 	command := strings.ToLower(args[0])
 
 	if h.CheckIfQueueIsActive(client, command, args) {
@@ -32,7 +36,9 @@ func (h *Handler) Handle(args []string, client *ClientState) string {
 	case "echo":
 		return resp.BulkString(args[1])
 	case "set":
-		return h.set(args)
+		response := h.set(args)
+		h.propagateWriteCommand(client, args)
+		return response
 	case "get":
 		return h.get(args[1])
 	case "rpush":
@@ -68,11 +74,19 @@ func (h *Handler) Handle(args []string, client *ClientState) string {
 	case "replconf":
 		return h.replconf(client, args)
 	case "psync":
-		return h.psync(client, args)
+		return h.psync(client, conn, args)
 
 	}
 
 	return resp.SimpleString("OK")
+}
+
+func (h *Handler) propagateWriteCommand(client *ClientState, args []string) {
+	if h.role != "master" || client.IsReplica {
+		return
+	}
+
+	h.replicationManager.Propagate(args)
 }
 
 func (h *Handler) CheckIfQueueIsActive(client *ClientState, command string, args []string) bool {
