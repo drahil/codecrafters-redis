@@ -23,9 +23,10 @@ func handleConnection(conn net.Conn, handler *command.Handler) {
 	defer conn.Close()
 
 	client := &command.ClientState{}
+	reader := resp.NewReader(conn)
 
 	for {
-		args, err := resp.GetArgs(conn)
+		args, err := reader.ReadArray()
 
 		if err != nil {
 			break

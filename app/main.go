@@ -25,12 +25,6 @@ func main() {
 		os.Exit(1)
 	}
 
-	if cfg.MasterHost != "" {
-		if err := replication.StartReplica(cfg); err != nil {
-			os.Exit(1)
-		}
-	}
-
 	role := "master"
 	if cfg.ReplicaOf != "" {
 		role = "replica"
@@ -40,6 +34,18 @@ func main() {
 	replicationManager := replication.NewManager()
 
 	handler := command.NewHandler(store, role, replicationManager)
+
+	if cfg.MasterHost != "" {
+		replicaClient := &command.ClientState{IsReplica: true}
+		go func() {
+			err := replication.StartReplica(cfg, func(args []string) {
+				handler.Handle(args, replicaClient, nil)
+			})
+			if err != nil {
+				fmt.Println("replication error:", err)
+			}
+		}()
+	}
 
 	server.Serve(l, handler)
 }

@@ -1,56 +1,95 @@
 package resp
 
 import (
+	"bufio"
 	"fmt"
-	"net"
+	"io"
 	"strconv"
 	"strings"
 )
 
-func parseMessage(message string) []string {
-	lines := strings.Split(message, "\r\n")
-	var args []string
-
-	i := 0
-	if len(lines) == 0 {
-		return args
-	}
-
-	// First line should be *N (array with N elements)
-	if len(lines[0]) == 0 || lines[0][0] != '*' {
-		return args
-	}
-	numArgs, err := strconv.Atoi(lines[0][1:])
-	if err != nil {
-		return args
-	}
-	i++
-
-	for j := 0; j < numArgs; j++ {
-		if i >= len(lines) {
-			break
-		}
-		// Skip the $N bulk string length prefix
-		if len(lines[i]) > 0 && lines[i][0] == '$' {
-			i++
-		}
-		if i >= len(lines) {
-			break
-		}
-		args = append(args, lines[i])
-		i++
-	}
-
-	return args
+type Reader struct {
+	reader *bufio.Reader
 }
 
-func GetArgs(conn net.Conn) ([]string, error) {
-	buf := make([]byte, 1024)
-	n, err := conn.Read(buf)
+func NewReader(reader io.Reader) *Reader {
+	return &Reader{
+		reader: bufio.NewReader(reader),
+	}
+}
 
-	raw := string(buf[:n])
-	args := parseMessage(raw)
-	fmt.Printf("%#v\n", args)
+func (r *Reader) ReadLine() (string, error) {
+	line, err := r.reader.ReadString('\n')
+	if err != nil {
+		return "", err
+	}
 
-	return args, err
+	if !strings.HasSuffix(line, "\r\n") {
+		return "", fmt.Errorf("invalid RESP line ending")
+	}
+
+	return strings.TrimSuffix(line, "\r\n"), nil
+}
+
+func (r *Reader) ReadBulkString() ([]byte, error) {
+	line, err := r.ReadLine()
+	if err != nil {
+		return nil, err
+	}
+
+	if len(line) == 0 || line[0] != '$' {
+		return nil, fmt.Errorf("expected bulk string, got %q", line)
+	}
+
+	length, err := strconv.Atoi(line[1:])
+	if err != nil {
+		return nil, err
+	}
+
+	if length < 0 {
+		return nil, nil
+	}
+
+	buf := make([]byte, length+2)
+	if _, err := io.ReadFull(r.reader, buf); err != nil {
+		return nil, err
+	}
+
+	if string(buf[length:]) != "\r\n" {
+		return nil, fmt.Errorf("invalid bulk string ending")
+	}
+
+	return buf[:length], nil
+}
+
+func (r *Reader) ReadArray() ([]string, error) {
+	line, err := r.ReadLine()
+	if err != nil {
+		return nil, err
+	}
+
+	if len(line) == 0 || line[0] != '*' {
+		return nil, fmt.Errorf("expected array, got %q", line)
+	}
+
+	numArgs, err := strconv.Atoi(line[1:])
+	if err != nil {
+		return nil, err
+	}
+
+	if numArgs < 0 {
+		return nil, nil
+	}
+
+	args := make([]string, 0, numArgs)
+	for i := 0; i < numArgs; i++ {
+		value, err := r.ReadBulkString()
+		if err != nil {
+			return nil, err
+		}
+
+		args = append(args, string(value))
+	}
+
+	return args, nil
 }
