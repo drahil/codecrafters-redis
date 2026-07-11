@@ -86,7 +86,7 @@ func sendPsync(conn net.Conn, reader *resp.Reader) error {
 
 	fmt.Println("master replied:", reply)
 
-	if _, err := reader.ReadBulkString(); err != nil {
+	if _, err := reader.ReadBulkPayload(); err != nil {
 		return err
 	}
 

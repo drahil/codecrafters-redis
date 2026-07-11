@@ -32,16 +32,7 @@ func (r *Reader) ReadLine() (string, error) {
 }
 
 func (r *Reader) ReadBulkString() ([]byte, error) {
-	line, err := r.ReadLine()
-	if err != nil {
-		return nil, err
-	}
-
-	if len(line) == 0 || line[0] != '$' {
-		return nil, fmt.Errorf("expected bulk string, got %q", line)
-	}
-
-	length, err := strconv.Atoi(line[1:])
+	length, err := r.readBulkLength()
 	if err != nil {
 		return nil, err
 	}
@@ -60,6 +51,42 @@ func (r *Reader) ReadBulkString() ([]byte, error) {
 	}
 
 	return buf[:length], nil
+}
+
+func (r *Reader) ReadBulkPayload() ([]byte, error) {
+	length, err := r.readBulkLength()
+	if err != nil {
+		return nil, err
+	}
+
+	if length < 0 {
+		return nil, nil
+	}
+
+	buf := make([]byte, length)
+	if _, err := io.ReadFull(r.reader, buf); err != nil {
+		return nil, err
+	}
+
+	return buf, nil
+}
+
+func (r *Reader) readBulkLength() (int, error) {
+	line, err := r.ReadLine()
+	if err != nil {
+		return 0, err
+	}
+
+	if len(line) == 0 || line[0] != '$' {
+		return 0, fmt.Errorf("expected bulk string, got %q", line)
+	}
+
+	length, err := strconv.Atoi(line[1:])
+	if err != nil {
+		return 0, err
+	}
+
+	return length, nil
 }
 
 func (r *Reader) ReadArray() ([]string, error) {
