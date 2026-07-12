@@ -51,8 +51,25 @@ func StartUpstream(cfg configs.Configs, applyCommand func([]string)) error {
 			return err
 		}
 
+		if handleGetAck(conn, args) {
+			continue
+		}
+
 		applyCommand(args)
 	}
+}
+
+func handleGetAck(conn net.Conn, args []string) bool {
+	if len(args) != 3 {
+		return false
+	}
+
+	if strings.ToLower(args[0]) != "replconf" || strings.ToLower(args[1]) != "getack" || args[2] != "*" {
+		return false
+	}
+
+	conn.Write([]byte(resp.Array([]string{"REPLCONF", "ACK", "0"})))
+	return true
 }
 
 func sendCommand(conn net.Conn, reader *resp.Reader, args []string) error {
