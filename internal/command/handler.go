@@ -12,14 +12,14 @@ import (
 type Handler struct {
 	store              *store.Store
 	role               string
-	replicationManager *replication.Manager
+	downstreamReplicas *replication.DownstreamReplicas
 }
 
-func NewHandler(store *store.Store, role string, replicationManager *replication.Manager) *Handler {
+func NewHandler(store *store.Store, role string, downstreamReplicas *replication.DownstreamReplicas) *Handler {
 	return &Handler{
 		store:              store,
 		role:               role,
-		replicationManager: replicationManager,
+		downstreamReplicas: downstreamReplicas,
 	}
 }
 
@@ -86,7 +86,7 @@ func (h *Handler) propagateWriteCommand(client *ClientState, args []string) {
 		return
 	}
 
-	h.replicationManager.Propagate(args)
+	h.downstreamReplicas.PropagateCommand(args)
 }
 
 func (h *Handler) CheckIfQueueIsActive(client *ClientState, command string, args []string) bool {

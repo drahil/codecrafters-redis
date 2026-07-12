@@ -31,14 +31,14 @@ func main() {
 	}
 
 	store := store.New()
-	replicationManager := replication.NewManager()
+	downstreamReplicas := replication.NewDownstreamReplicas()
 
-	handler := command.NewHandler(store, role, replicationManager)
+	handler := command.NewHandler(store, role, downstreamReplicas)
 
 	if cfg.MasterHost != "" {
 		replicaClient := &command.ClientState{IsReplica: true}
 		go func() {
-			err := replication.StartReplica(cfg, func(args []string) {
+			err := replication.StartUpstream(cfg, func(args []string) {
 				handler.Handle(args, replicaClient, nil)
 			})
 			if err != nil {

@@ -10,7 +10,8 @@ import (
 	"github.com/codecrafters-io/redis-starter-go/internal/resp"
 )
 
-func StartReplica(cfg configs.Configs, processCommand func([]string)) error {
+// StartUpstream connects this server, acting as a replica, to its master.
+func StartUpstream(cfg configs.Configs, applyCommand func([]string)) error {
 	masterAddr := fmt.Sprintf("%s:%d", cfg.MasterHost, cfg.MasterPort)
 	conn, err := net.Dial("tcp", masterAddr)
 
@@ -50,7 +51,7 @@ func StartReplica(cfg configs.Configs, processCommand func([]string)) error {
 			return err
 		}
 
-		processCommand(args)
+		applyCommand(args)
 	}
 }
 
