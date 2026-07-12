@@ -45,31 +45,39 @@ func StartUpstream(cfg configs.Configs, applyCommand func([]string)) error {
 		return err
 	}
 
+	offset := 0
 	for {
-		args, err := reader.ReadArray()
+		args, commandBytes, err := reader.ReadArrayWithByteCount()
 		if err != nil {
 			return err
 		}
 
-		if handleGetAck(conn, args) {
+		handled, err := handleGetAck(conn, args, offset)
+		if err != nil {
+			return err
+		}
+
+		if handled {
+			offset += commandBytes
 			continue
 		}
 
 		applyCommand(args)
+		offset += commandBytes
 	}
 }
 
-func handleGetAck(conn net.Conn, args []string) bool {
+func handleGetAck(conn net.Conn, args []string, offset int) (bool, error) {
 	if len(args) != 3 {
-		return false
+		return false, nil
 	}
 
 	if strings.ToLower(args[0]) != "replconf" || strings.ToLower(args[1]) != "getack" || args[2] != "*" {
-		return false
+		return false, nil
 	}
 
-	conn.Write([]byte(resp.Array([]string{"REPLCONF", "ACK", "0"})))
-	return true
+	_, err := conn.Write([]byte(resp.Array([]string{"REPLCONF", "ACK", strconv.Itoa(offset)})))
+	return true, err
 }
 
 func sendCommand(conn net.Conn, reader *resp.Reader, args []string) error {

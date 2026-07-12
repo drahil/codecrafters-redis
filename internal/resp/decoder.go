@@ -19,38 +19,48 @@ func NewReader(reader io.Reader) *Reader {
 }
 
 func (r *Reader) ReadLine() (string, error) {
+	line, _, err := r.readLineWithByteCount()
+	return line, err
+}
+
+func (r *Reader) readLineWithByteCount() (string, int, error) {
 	line, err := r.reader.ReadString('\n')
 	if err != nil {
-		return "", err
+		return "", 0, err
 	}
 
 	if !strings.HasSuffix(line, "\r\n") {
-		return "", fmt.Errorf("invalid RESP line ending")
+		return "", 0, fmt.Errorf("invalid RESP line ending")
 	}
 
-	return strings.TrimSuffix(line, "\r\n"), nil
+	return strings.TrimSuffix(line, "\r\n"), len(line), nil
 }
 
 func (r *Reader) ReadBulkString() ([]byte, error) {
-	length, err := r.readBulkLength()
+	value, _, err := r.readBulkStringWithByteCount()
+	return value, err
+}
+
+func (r *Reader) readBulkStringWithByteCount() ([]byte, int, error) {
+	length, byteCount, err := r.readBulkLengthWithByteCount()
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 
 	if length < 0 {
-		return nil, nil
+		return nil, byteCount, nil
 	}
 
 	buf := make([]byte, length+2)
 	if _, err := io.ReadFull(r.reader, buf); err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 
 	if string(buf[length:]) != "\r\n" {
-		return nil, fmt.Errorf("invalid bulk string ending")
+		return nil, 0, fmt.Errorf("invalid bulk string ending")
 	}
 
-	return buf[:length], nil
+	return buf[:length], byteCount + len(buf), nil
 }
 
 func (r *Reader) ReadBulkPayload() ([]byte, error) {
@@ -72,51 +82,62 @@ func (r *Reader) ReadBulkPayload() ([]byte, error) {
 }
 
 func (r *Reader) readBulkLength() (int, error) {
-	line, err := r.ReadLine()
+	length, _, err := r.readBulkLengthWithByteCount()
+	return length, err
+}
+
+func (r *Reader) readBulkLengthWithByteCount() (int, int, error) {
+	line, byteCount, err := r.readLineWithByteCount()
 	if err != nil {
-		return 0, err
+		return 0, 0, err
 	}
 
 	if len(line) == 0 || line[0] != '$' {
-		return 0, fmt.Errorf("expected bulk string, got %q", line)
+		return 0, 0, fmt.Errorf("expected bulk string, got %q", line)
 	}
 
 	length, err := strconv.Atoi(line[1:])
 	if err != nil {
-		return 0, err
+		return 0, 0, err
 	}
 
-	return length, nil
+	return length, byteCount, nil
 }
 
 func (r *Reader) ReadArray() ([]string, error) {
-	line, err := r.ReadLine()
+	args, _, err := r.ReadArrayWithByteCount()
+	return args, err
+}
+
+func (r *Reader) ReadArrayWithByteCount() ([]string, int, error) {
+	line, byteCount, err := r.readLineWithByteCount()
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 
 	if len(line) == 0 || line[0] != '*' {
-		return nil, fmt.Errorf("expected array, got %q", line)
+		return nil, 0, fmt.Errorf("expected array, got %q", line)
 	}
 
 	numArgs, err := strconv.Atoi(line[1:])
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 
 	if numArgs < 0 {
-		return nil, nil
+		return nil, byteCount, nil
 	}
 
 	args := make([]string, 0, numArgs)
 	for i := 0; i < numArgs; i++ {
-		value, err := r.ReadBulkString()
+		value, argByteCount, err := r.readBulkStringWithByteCount()
 		if err != nil {
-			return nil, err
+			return nil, 0, err
 		}
 
 		args = append(args, string(value))
+		byteCount += argByteCount
 	}
 
-	return args, nil
+	return args, byteCount, nil
 }
